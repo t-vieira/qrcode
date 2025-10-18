@@ -196,7 +196,10 @@ class QrCodeController extends Controller
             'qr_code_name' => $qrCode->name,
             'user_id' => auth()->id(),
             'qr_code_user_id' => $qrCode->user_id,
-            'is_admin' => auth()->user()->hasRole('admin')
+            'is_admin' => auth()->user()->hasRole('admin'),
+            'request_method' => request()->method(),
+            'request_url' => request()->url(),
+            'request_data' => request()->all()
         ]);
 
         // Verificar se o usuário pode deletar este QR Code
