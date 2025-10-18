@@ -153,7 +153,7 @@
                                 <div class="flex items-center">
                                     <div class="flex-shrink-0">
                                         @if($qrCode->file_path)
-                                            <img src="{{ Storage::url($qrCode->file_path) }}" alt="{{ $qrCode->name }}" class="h-10 w-10 rounded">
+                                            <img src="{{ asset('storage/' . $qrCode->file_path) }}" alt="{{ $qrCode->name }}" class="h-10 w-10 rounded">
                                         @else
                                             <div class="h-10 w-10 bg-gray-200 rounded flex items-center justify-center">
                                                 <svg class="h-6 w-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -164,7 +164,7 @@
                                     </div>
                                     <div class="ml-3">
                                         <p class="text-sm font-medium text-gray-900">{{ $qrCode->name }}</p>
-                                        <p class="text-sm text-gray-500">{{ ucfirst($qrCode->type) }} • {{ $qrCode->total_scans }} scans</p>
+                                        <p class="text-sm text-gray-500">{{ ucfirst($qrCode->type) }} • {{ $qrCode->total_scans ?? 0 }} scans</p>
                                     </div>
                                 </div>
                                 <div class="flex items-center space-x-2">
@@ -249,7 +249,7 @@
                             </div>
                         </a>
 
-                        @if(auth()->user()->canAccessAdvancedFeatures())
+                        @if(auth()->user()->subscription_status === 'active')
                             <a href="#" class="relative group bg-white p-6 focus-within:ring-2 focus-within:ring-inset focus-within:ring-primary-500 rounded-lg border border-gray-200 hover:border-gray-300">
                                 <div>
                                     <span class="rounded-lg inline-flex p-3 bg-blue-50 text-blue-700 ring-4 ring-white">
