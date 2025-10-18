@@ -119,8 +119,16 @@ class QrCodeController extends Controller
         }
     }
 
-    public function show(QrCode $qrCode)
+    public function show($id)
     {
+        // Buscar o QR code manualmente
+        $qrCode = QrCode::find($id);
+        
+        if (!$qrCode) {
+            \Log::error('QR Code not found for show', ['qr_code_id' => $id]);
+            abort(404, 'QR Code não encontrado');
+        }
+        
         // Log para debug
         \Log::info('QR Code show called', [
             'qr_code_id' => $qrCode->id,
