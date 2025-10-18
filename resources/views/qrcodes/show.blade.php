@@ -130,22 +130,105 @@
         <div class="mt-8 bg-white shadow rounded-lg">
             <div class="px-4 py-5 sm:p-6">
                 <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">Estatísticas</h3>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="grid grid-cols-1 md:grid-cols-5 gap-6">
                     <div class="text-center">
-                        <div class="text-2xl font-bold text-gray-900">0</div>
+                        <div class="text-2xl font-bold text-gray-900">{{ number_format($stats['total_scans']) }}</div>
                         <div class="text-sm text-gray-500">Total de Scans</div>
                     </div>
                     <div class="text-center">
-                        <div class="text-2xl font-bold text-gray-900">0</div>
+                        <div class="text-2xl font-bold text-gray-900">{{ number_format($stats['unique_scans']) }}</div>
                         <div class="text-sm text-gray-500">Scans Únicos</div>
                     </div>
                     <div class="text-center">
-                        <div class="text-2xl font-bold text-gray-900">0</div>
+                        <div class="text-2xl font-bold text-gray-900">{{ number_format($stats['today_scans']) }}</div>
                         <div class="text-sm text-gray-500">Scans Hoje</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-2xl font-bold text-gray-900">{{ number_format($stats['this_week_scans']) }}</div>
+                        <div class="text-sm text-gray-500">Esta Semana</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-2xl font-bold text-gray-900">{{ number_format($stats['this_month_scans']) }}</div>
+                        <div class="text-sm text-gray-500">Este Mês</div>
                     </div>
                 </div>
             </div>
         </div>
+
+        <!-- Device Statistics -->
+        @if(!empty($stats['device_stats']))
+        <div class="mt-8 bg-white shadow rounded-lg">
+            <div class="px-4 py-5 sm:p-6">
+                <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">Scans por Dispositivo</h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    @foreach($stats['device_stats'] as $device => $count)
+                        <div class="text-center">
+                            <div class="text-2xl font-bold text-gray-900">{{ number_format($count) }}</div>
+                            <div class="text-sm text-gray-500">{{ ucfirst($device) }}</div>
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+        </div>
+        @endif
+
+        <!-- Recent Scans -->
+        @if($recentScans->count() > 0)
+        <div class="mt-8 bg-white shadow rounded-lg">
+            <div class="px-4 py-5 sm:p-6">
+                <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">Scans Recentes</h3>
+                <div class="space-y-3">
+                    @foreach($recentScans as $scan)
+                        <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0">
+                                    <div class="w-8 h-8 bg-primary-500 rounded-full flex items-center justify-center">
+                                        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                                        </svg>
+                                    </div>
+                                </div>
+                                <div class="ml-3">
+                                    <p class="text-sm font-medium text-gray-900">
+                                        {{ $scan->device_type ? ucfirst($scan->device_type) : 'Dispositivo' }}
+                                        @if($scan->is_unique)
+                                            <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                                                Único
+                                            </span>
+                                        @endif
+                                    </p>
+                                    <p class="text-sm text-gray-500">
+                                        {{ $scan->scanned_at->format('d/m/Y H:i') }}
+                                        @if($scan->country)
+                                            • {{ $scan->country }}
+                                        @endif
+                                        @if($scan->city)
+                                            • {{ $scan->city }}
+                                        @endif
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                @if($scan->browser)
+                                    <p class="text-sm text-gray-500">{{ $scan->browser }}</p>
+                                @endif
+                                @if($scan->os)
+                                    <p class="text-sm text-gray-500">{{ $scan->os }}</p>
+                                @endif
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+                @if($stats['total_scans'] > 10)
+                    <div class="mt-4 text-center">
+                        <a href="{{ route('qrcodes.scans', $qrCode) }}" class="text-sm text-primary-600 hover:text-primary-900">
+                            Ver todos os {{ number_format($stats['total_scans']) }} scans →
+                        </a>
+                    </div>
+                @endif
+            </div>
+        </div>
+        @endif
     </div>
 </div>
 @endsection

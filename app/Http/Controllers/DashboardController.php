@@ -37,9 +37,9 @@ class DashboardController extends Controller
         // Buscar QR Codes do usuário
         $qrCodeIds = $user->qrCodes()->pluck('id');
         
-        // Calcular estatísticas reais
-        $totalScans = $user->qrCodes()->sum('scan_count');
-        $uniqueScans = \App\Models\QrScan::whereIn('qr_code_id', $qrCodeIds)->distinct('ip_address')->count();
+        // Calcular estatísticas reais dos scans
+        $totalScans = \App\Models\QrScan::whereIn('qr_code_id', $qrCodeIds)->count();
+        $uniqueScans = \App\Models\QrScan::whereIn('qr_code_id', $qrCodeIds)->where('is_unique', true)->count();
         $todayScans = \App\Models\QrScan::whereIn('qr_code_id', $qrCodeIds)
             ->whereDate('scanned_at', today())
             ->count();
@@ -54,11 +54,26 @@ class DashboardController extends Controller
 
     protected function getScansChartData($user): array
     {
-        // Para simplificar, vamos retornar dados vazios por enquanto
-        // Em produção, você pode implementar as consultas reais
+        $qrCodeIds = $user->qrCodes()->pluck('id');
+        
+        // Gerar dados dos últimos 30 dias
+        $labels = [];
+        $data = [];
+        
+        for ($i = 29; $i >= 0; $i--) {
+            $date = now()->subDays($i);
+            $labels[] = $date->format('d/m');
+            
+            $scansCount = \App\Models\QrScan::whereIn('qr_code_id', $qrCodeIds)
+                ->whereDate('scanned_at', $date->format('Y-m-d'))
+                ->count();
+                
+            $data[] = $scansCount;
+        }
+        
         return [
-            'labels' => [],
-            'data' => [],
+            'labels' => $labels,
+            'data' => $data,
         ];
     }
 

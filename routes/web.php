@@ -7,6 +7,8 @@ use App\Http\Controllers\RedirectController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\SubscriptionController;
+use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\AdminController;
 
 // Rotas públicas
 Route::get('/', function () {
@@ -57,6 +59,17 @@ Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 Route::post('/subscription/webhook', [SubscriptionController::class, 'webhook'])->name('subscription.webhook');
 // Route::post('/whatsapp/webhook', [SupportController::class, 'webhook'])->name('whatsapp.webhook');
 
+// Perfil do usuário (com middleware auth individual)
+Route::middleware(['auth'])->group(function () {
+    Route::get('/profile', [ProfileController::class, 'show'])->name('profile.show');
+    Route::get('/profile/edit', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::get('/profile/password', [ProfileController::class, 'editPassword'])->name('profile.password.edit');
+    Route::put('/profile/password', [ProfileController::class, 'updatePassword'])->name('profile.password.update');
+    Route::get('/profile/settings', [ProfileController::class, 'settings'])->name('profile.settings');
+    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+});
+
 // Rotas autenticadas
 Route::middleware(['auth'])->group(function () {
     // Dashboard
@@ -66,6 +79,8 @@ Route::middleware(['auth'])->group(function () {
     Route::resource('qrcodes', QrCodeController::class);
     Route::get('/qrcodes/{qrCode}/download/{format?}', [QrCodeController::class, 'download'])
         ->name('qrcodes.download');
+    Route::get('/qrcodes/{qrCode}/scans', [QrCodeController::class, 'scans'])
+        ->name('qrcodes.scans');
     Route::post('/qrcodes/preview', [QrCodeController::class, 'preview'])
         ->name('qrcodes.preview');
     
@@ -132,7 +147,31 @@ Route::middleware(['auth'])->group(function () {
     // Route::post('/locale/change/{locale}', [LocaleController::class, 'change'])->name('locale.change');
 });
 
-// Rotas que requerem assinatura ativa
+// Rotas administrativas
+Route::middleware(['admin'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/', [AdminController::class, 'dashboard'])->name('dashboard');
+    Route::get('/statistics', [AdminController::class, 'statistics'])->name('statistics');
+    
+    // Gerenciamento de usuários
+    Route::get('/users', [AdminController::class, 'users'])->name('users');
+    Route::get('/users/create', [AdminController::class, 'createUser'])->name('users.create');
+    Route::post('/users', [AdminController::class, 'storeUser'])->name('users.store');
+    Route::get('/users/{user}', [AdminController::class, 'showUser'])->name('users.show');
+    Route::get('/users/{user}/edit', [AdminController::class, 'editUser'])->name('users.edit');
+    Route::put('/users/{user}', [AdminController::class, 'updateUser'])->name('users.update');
+    Route::delete('/users/{user}', [AdminController::class, 'destroyUser'])->name('users.destroy');
+    
+    // Gerenciamento de assinaturas
+    Route::get('/subscriptions', [AdminController::class, 'subscriptions'])->name('subscriptions');
+    
+    // Gerenciamento de QR Codes
+    Route::get('/qr-codes', [AdminController::class, 'qrCodes'])->name('qr-codes');
+    
+    // Gerenciamento de equipes
+    Route::get('/teams', [AdminController::class, 'teams'])->name('teams');
+});
+
+    // Rotas que requerem assinatura ativa
 Route::middleware(['auth', 'verified', 'subscription'])->group(function () {
     // Funcionalidades avançadas aqui
 });

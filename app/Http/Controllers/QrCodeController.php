@@ -81,7 +81,60 @@ class QrCodeController extends Controller
             abort(403);
         }
 
-        return view('qrcodes.show', compact('qrCode'));
+        // Carregar estatísticas de scan
+        $stats = $this->getQrCodeStats($qrCode);
+        
+        // Carregar scans recentes
+        $recentScans = $qrCode->scans()
+            ->with('qrCode')
+            ->latest('scanned_at')
+            ->limit(10)
+            ->get();
+
+        return view('qrcodes.show', compact('qrCode', 'stats', 'recentScans'));
+    }
+
+    /**
+     * Exibir todos os scans de um QR Code
+     */
+    public function scans(QrCode $qrCode, Request $request)
+    {
+        // Verificar se o usuário pode acessar este QR Code
+        if ($qrCode->user_id !== auth()->id()) {
+            abort(403);
+        }
+
+        $query = $qrCode->scans()->latest('scanned_at');
+
+        // Filtros
+        if ($request->filled('device_type')) {
+            $query->where('device_type', $request->device_type);
+        }
+
+        if ($request->filled('country')) {
+            $query->where('country', $request->country);
+        }
+
+        if ($request->filled('unique_only')) {
+            $query->where('is_unique', true);
+        }
+
+        $scans = $query->paginate(50);
+
+        // Estatísticas para filtros
+        $deviceTypes = $qrCode->scans()
+            ->selectRaw('device_type, COUNT(*) as count')
+            ->groupBy('device_type')
+            ->pluck('count', 'device_type');
+
+        $countries = $qrCode->scans()
+            ->whereNotNull('country')
+            ->selectRaw('country, COUNT(*) as count')
+            ->groupBy('country')
+            ->orderBy('count', 'desc')
+            ->pluck('count', 'country');
+
+        return view('qrcodes.scans', compact('qrCode', 'scans', 'deviceTypes', 'countries'));
     }
 
     public function edit(QrCode $qrCode)
@@ -202,5 +255,48 @@ class QrCodeController extends Controller
         } while (QrCode::where('short_code', $shortCode)->exists());
 
         return $shortCode;
+    }
+
+    /**
+     * Obter estatísticas do QR Code
+     */
+    private function getQrCodeStats(QrCode $qrCode): array
+    {
+        $totalScans = $qrCode->scans()->count();
+        $uniqueScans = $qrCode->scans()->where('is_unique', true)->count();
+        $todayScans = $qrCode->scans()->whereDate('scanned_at', today())->count();
+        $thisWeekScans = $qrCode->scans()->whereBetween('scanned_at', [now()->startOfWeek(), now()->endOfWeek()])->count();
+        $thisMonthScans = $qrCode->scans()->whereMonth('scanned_at', now()->month)->count();
+
+        // Estatísticas por dispositivo
+        $deviceStats = $qrCode->scans()
+            ->selectRaw('device_type, COUNT(*) as count')
+            ->groupBy('device_type')
+            ->pluck('count', 'device_type')
+            ->toArray();
+
+        // Estatísticas por país
+        $countryStats = $qrCode->scans()
+            ->whereNotNull('country')
+            ->selectRaw('country, COUNT(*) as count')
+            ->groupBy('country')
+            ->orderBy('count', 'desc')
+            ->limit(5)
+            ->pluck('count', 'country')
+            ->toArray();
+
+        // Último scan
+        $lastScan = $qrCode->scans()->latest('scanned_at')->first();
+
+        return [
+            'total_scans' => $totalScans,
+            'unique_scans' => $uniqueScans,
+            'today_scans' => $todayScans,
+            'this_week_scans' => $thisWeekScans,
+            'this_month_scans' => $thisMonthScans,
+            'device_stats' => $deviceStats,
+            'country_stats' => $countryStats,
+            'last_scan' => $lastScan,
+        ];
     }
 }

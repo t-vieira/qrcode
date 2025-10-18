@@ -164,7 +164,7 @@
                                     </div>
                                     <div class="ml-3">
                                         <p class="text-sm font-medium text-gray-900">{{ $qrCode->name }}</p>
-                                        <p class="text-sm text-gray-500">{{ ucfirst($qrCode->type) }} • {{ $qrCode->total_scans ?? 0 }} scans</p>
+                                        <p class="text-sm text-gray-500">{{ ucfirst($qrCode->type) }} • {{ $qrCode->scans()->count() }} scans</p>
                                     </div>
                                 </div>
                                 <div class="flex items-center space-x-2">

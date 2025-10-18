@@ -17,6 +17,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'security.headers' => \App\Http\Middleware\SecurityHeaders::class,
             'file.upload' => \App\Http\Middleware\ValidateFileUpload::class,
             'suspicious.activity' => \App\Http\Middleware\BlockSuspiciousActivity::class,
+            'admin' => \App\Http\Middleware\AdminMiddleware::class,
         ]);
         
         // Temporariamente desabilitar middlewares customizados para debug

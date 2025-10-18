@@ -139,33 +139,38 @@ class RedirectController extends Controller
             $ipAddress = $request->ip();
 
             // Detectar informações do dispositivo
-            $device = $agent->device() ?: 'Unknown';
+            $deviceType = 'desktop';
+            if ($agent->isMobile()) {
+                $deviceType = 'mobile';
+            } elseif ($agent->isTablet()) {
+                $deviceType = 'tablet';
+            }
+
             $platform = $agent->platform() ?: 'Unknown';
             $browser = $agent->browser() ?: 'Unknown';
-            $isMobile = $agent->isMobile() ? 1 : 0;
-            $isTablet = $agent->isTablet() ? 1 : 0;
-            $isDesktop = $agent->isDesktop() ? 1 : 0;
+
+            // Verificar se é um scan único (mesmo IP + dispositivo nas últimas 24h)
+            $isUnique = !QrScan::where('qr_code_id', $qrCode->id)
+                ->where('ip_address', $ipAddress)
+                ->where('device_type', $deviceType)
+                ->where('scanned_at', '>=', now()->subDay())
+                ->exists();
 
             // Criar registro do scan
             QrScan::create([
                 'qr_code_id' => $qrCode->id,
                 'ip_address' => $ipAddress,
                 'user_agent' => $userAgent,
-                'device' => $device,
-                'platform' => $platform,
+                'device_type' => $deviceType,
+                'os' => $platform,
                 'browser' => $browser,
-                'is_mobile' => $isMobile,
-                'is_tablet' => $isTablet,
-                'is_desktop' => $isDesktop,
                 'country' => null, // Pode ser implementado com API de geolocalização
                 'city' => null,
                 'latitude' => null,
                 'longitude' => null,
+                'is_unique' => $isUnique,
                 'scanned_at' => now(),
             ]);
-
-            // Incrementar contador de scans no QR Code
-            $qrCode->increment('scan_count');
 
         } catch (\Exception $e) {
             // Log do erro mas não interromper o redirecionamento
