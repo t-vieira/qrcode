@@ -22,21 +22,46 @@ class RedirectController extends Controller
             'short_code' => $shortCode,
             'request_url' => $request->url(),
             'user_agent' => $request->userAgent(),
-            'ip_address' => $request->ip()
+            'ip_address' => $request->ip(),
+            'request_method' => $request->method(),
+            'request_headers' => $request->headers->all()
         ]);
 
         // Buscar o QR Code pelo short_code
+        \Log::info('Searching for QR code', [
+            'short_code' => $shortCode,
+            'total_qr_codes' => QrCode::count(),
+            'active_qr_codes' => QrCode::where('status', 'active')->count()
+        ]);
+
         $qrCode = QrCode::where('short_code', $shortCode)
             ->where('status', 'active')
             ->first();
 
         if (!$qrCode) {
+            // Log mais detalhado para debug
+            $allQrCodes = QrCode::select('id', 'name', 'short_code', 'status', 'user_id')->get();
+            $activeQrCodes = QrCode::where('status', 'active')->select('id', 'name', 'short_code', 'user_id')->get();
+            
             \Log::warning('QR Code not found for redirect', [
                 'short_code' => $shortCode,
-                'all_qr_codes' => QrCode::pluck('short_code', 'id')->toArray()
+                'total_qr_codes' => QrCode::count(),
+                'active_qr_codes' => QrCode::where('status', 'active')->count(),
+                'all_qr_codes' => $allQrCodes->toArray(),
+                'active_qr_codes_list' => $activeQrCodes->toArray(),
+                'similar_short_codes' => QrCode::where('short_code', 'like', '%' . substr($shortCode, 0, 3) . '%')->pluck('short_code', 'id')->toArray()
             ]);
+            
             abort(404, 'QR Code não encontrado ou inativo.');
         }
+
+        \Log::info('QR Code found for redirect', [
+            'qr_code_id' => $qrCode->id,
+            'qr_code_name' => $qrCode->name,
+            'qr_code_type' => $qrCode->type,
+            'qr_code_content' => $qrCode->content,
+            'qr_code_user_id' => $qrCode->user_id
+        ]);
 
         // Registrar o scan
         $this->recordScan($qrCode, $request);
@@ -44,11 +69,29 @@ class RedirectController extends Controller
         // Obter o conteúdo para redirecionamento
         $content = $this->getRedirectContent($qrCode);
 
+        \Log::info('QR Code content extracted', [
+            'qr_code_id' => $qrCode->id,
+            'content' => $content,
+            'content_type' => gettype($content),
+            'content_length' => strlen($content)
+        ]);
+
         if (empty($content)) {
+            \Log::error('QR Code content is empty', [
+                'qr_code_id' => $qrCode->id,
+                'qr_code_type' => $qrCode->type,
+                'qr_code_content_raw' => $qrCode->content
+            ]);
             abort(404, 'Conteúdo do QR Code não encontrado.');
         }
 
         // Redirecionar baseado no tipo
+        \Log::info('Performing redirect', [
+            'qr_code_id' => $qrCode->id,
+            'redirect_type' => $qrCode->type,
+            'redirect_content' => $content
+        ]);
+
         return $this->performRedirect($qrCode->type, $content);
     }
 
@@ -77,7 +120,13 @@ class RedirectController extends Controller
 
     protected function performRedirect(string $type, string $content): RedirectResponse
     {
-        return match ($type) {
+        \Log::info('Performing redirect match', [
+            'type' => $type,
+            'content' => $content,
+            'content_length' => strlen($content)
+        ]);
+
+        $redirectResponse = match ($type) {
             'url' => redirect($content),
             'email' => redirect($content),
             'phone' => redirect($content),
@@ -86,6 +135,14 @@ class RedirectController extends Controller
             'text' => redirect()->route('qr.text', ['content' => base64_encode($content)]),
             default => redirect($content),
         };
+
+        \Log::info('Redirect response created', [
+            'type' => $type,
+            'redirect_url' => $redirectResponse->getTargetUrl(),
+            'status_code' => $redirectResponse->getStatusCode()
+        ]);
+
+        return $redirectResponse;
     }
 
     protected function generateEmailContent(array $content): string
