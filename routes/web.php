@@ -59,12 +59,8 @@ Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 Route::post('/subscription/webhook', [SubscriptionController::class, 'webhook'])->name('subscription.webhook');
 // Route::post('/whatsapp/webhook', [SupportController::class, 'webhook'])->name('whatsapp.webhook');
 
-// Rotas autenticadas
+// Perfil do usuário (com middleware auth individual)
 Route::middleware(['auth'])->group(function () {
-    // Dashboard
-    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
-    
-    // Perfil do usuário
     Route::get('/profile', [ProfileController::class, 'show'])->name('profile.show');
     Route::get('/profile/edit', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
@@ -72,6 +68,13 @@ Route::middleware(['auth'])->group(function () {
     Route::put('/profile/password', [ProfileController::class, 'updatePassword'])->name('profile.password.update');
     Route::get('/profile/settings', [ProfileController::class, 'settings'])->name('profile.settings');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+});
+
+// Rotas autenticadas
+Route::middleware(['auth'])->group(function () {
+    // Dashboard
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    
     
     // QR Codes
     Route::resource('qrcodes', QrCodeController::class);
