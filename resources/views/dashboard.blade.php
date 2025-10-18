@@ -181,7 +181,7 @@
                                 <h3 class="mt-2 text-sm font-medium text-gray-900">Nenhum QR Code</h3>
                                 <p class="mt-1 text-sm text-gray-500">Comece criando seu primeiro QR Code.</p>
                                 <div class="mt-6">
-                                    <a href="{{ route('qrcodes.create') }}" class="btn-primary">
+                                    <a href="/qrcodes/create" class="btn-primary">
                                         Criar QR Code
                                     </a>
                                 </div>
@@ -215,7 +215,7 @@
                 <div class="px-4 py-5 sm:p-6">
                     <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">Ações Rápidas</h3>
                     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                        <a href="{{ route('qrcodes.create') }}" class="relative group bg-white p-6 focus-within:ring-2 focus-within:ring-inset focus-within:ring-primary-500 rounded-lg border border-gray-200 hover:border-gray-300">
+                            <a href="/qrcodes/create" class="relative group bg-white p-6 focus-within:ring-2 focus-within:ring-inset focus-within:ring-primary-500 rounded-lg border border-gray-200 hover:border-gray-300">
                             <div>
                                 <span class="rounded-lg inline-flex p-3 bg-primary-50 text-primary-700 ring-4 ring-white">
                                     <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
