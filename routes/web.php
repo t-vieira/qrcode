@@ -13,6 +13,15 @@ Route::get('/', function () {
     return view('welcome');
 })->name('home');
 
+// Páginas públicas de ajuda
+Route::get('/help/terms', function () {
+    return view('help.terms');
+})->name('help.terms');
+
+Route::get('/help/privacy', function () {
+    return view('help.privacy');
+})->name('help.privacy');
+
 // Redirecionamento de QR Codes (deve vir antes das rotas autenticadas)
 Route::get('/{shortCode}', [RedirectController::class, 'redirect'])
     ->where('shortCode', '[a-zA-Z0-9\-_]+')
@@ -33,7 +42,7 @@ Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
 // Webhooks (sem autenticação)
 Route::post('/subscription/webhook', [SubscriptionController::class, 'webhook'])->name('subscription.webhook');
-Route::post('/whatsapp/webhook', [SupportController::class, 'webhook'])->name('whatsapp.webhook');
+// Route::post('/whatsapp/webhook', [SupportController::class, 'webhook'])->name('whatsapp.webhook');
 
 // Rotas autenticadas
 Route::middleware(['auth', 'verified'])->group(function () {
@@ -57,57 +66,57 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/subscription/failure', [SubscriptionController::class, 'failure'])->name('subscription.failure');
     Route::get('/subscription/pending', [SubscriptionController::class, 'pending'])->name('subscription.pending');
     
-    // Domínios customizados
-    Route::resource('domains', CustomDomainController::class);
-    Route::post('/domains/{domain}/verify', [CustomDomainController::class, 'verify'])->name('domains.verify');
-    Route::post('/domains/{domain}/primary', [CustomDomainController::class, 'setPrimary'])->name('domains.primary');
-    Route::get('/domains/{domain}/instructions', [CustomDomainController::class, 'instructions'])->name('domains.instructions');
+    // Domínios customizados (comentado até implementar controller)
+    // Route::resource('domains', CustomDomainController::class);
+    // Route::post('/domains/{domain}/verify', [CustomDomainController::class, 'verify'])->name('domains.verify');
+    // Route::post('/domains/{domain}/primary', [CustomDomainController::class, 'setPrimary'])->name('domains.primary');
+    // Route::get('/domains/{domain}/instructions', [CustomDomainController::class, 'instructions'])->name('domains.instructions');
     
-    // Equipes
-    Route::resource('teams', TeamController::class);
-    Route::post('/teams/{team}/members', [TeamController::class, 'addMember'])->name('teams.add-member');
-    Route::delete('/teams/{team}/members/{user}', [TeamController::class, 'removeMember'])->name('teams.remove-member');
-    Route::put('/teams/{team}/members/{user}/permissions', [TeamController::class, 'updateMemberPermissions'])->name('teams.update-permissions');
-    Route::post('/teams/{team}/leave', [TeamController::class, 'leave'])->name('teams.leave');
+    // Equipes (comentado até implementar controller)
+    // Route::resource('teams', TeamController::class);
+    // Route::post('/teams/{team}/members', [TeamController::class, 'addMember'])->name('teams.add-member');
+    // Route::delete('/teams/{team}/members/{user}', [TeamController::class, 'removeMember'])->name('teams.remove-member');
+    // Route::put('/teams/{team}/members/{user}/permissions', [TeamController::class, 'updateMemberPermissions'])->name('teams.update-permissions');
+    // Route::post('/teams/{team}/leave', [TeamController::class, 'leave'])->name('teams.leave');
     
-    // Compartilhamento social
-    Route::get('/qrcodes/{qrCode}/share/whatsapp', [SocialShareController::class, 'whatsapp'])->name('qrcodes.share.whatsapp');
-    Route::get('/qrcodes/{qrCode}/share/facebook', [SocialShareController::class, 'facebook'])->name('qrcodes.share.facebook');
-    Route::get('/qrcodes/{qrCode}/share/twitter', [SocialShareController::class, 'twitter'])->name('qrcodes.share.twitter');
-    Route::get('/qrcodes/{qrCode}/share/linkedin', [SocialShareController::class, 'linkedin'])->name('qrcodes.share.linkedin');
-    Route::get('/qrcodes/{qrCode}/share/email', [SocialShareController::class, 'email'])->name('qrcodes.share.email');
-    Route::get('/qrcodes/{qrCode}/share/link', [SocialShareController::class, 'generatePublicLink'])->name('qrcodes.share.link');
-    Route::get('/qrcodes/{qrCode}/og', [SocialShareController::class, 'openGraph'])->name('qrcodes.og');
+    // Compartilhamento social (comentado até implementar controller)
+    // Route::get('/qrcodes/{qrCode}/share/whatsapp', [SocialShareController::class, 'whatsapp'])->name('qrcodes.share.whatsapp');
+    // Route::get('/qrcodes/{qrCode}/share/facebook', [SocialShareController::class, 'facebook'])->name('qrcodes.share.facebook');
+    // Route::get('/qrcodes/{qrCode}/share/twitter', [SocialShareController::class, 'twitter'])->name('qrcodes.share.twitter');
+    // Route::get('/qrcodes/{qrCode}/share/linkedin', [SocialShareController::class, 'linkedin'])->name('qrcodes.share.linkedin');
+    // Route::get('/qrcodes/{qrCode}/share/email', [SocialShareController::class, 'email'])->name('qrcodes.share.email');
+    // Route::get('/qrcodes/{qrCode}/share/link', [SocialShareController::class, 'generatePublicLink'])->name('qrcodes.share.link');
+    // Route::get('/qrcodes/{qrCode}/og', [SocialShareController::class, 'openGraph'])->name('qrcodes.og');
     
-    // Suporte
-    Route::resource('support', SupportController::class)->only(['index', 'create', 'store', 'show']);
-    Route::post('/support/tickets/{ticket}/close', [SupportController::class, 'close'])->name('support.close');
-    Route::post('/support/tickets/{ticket}/reopen', [SupportController::class, 'reopen'])->name('support.reopen');
-    Route::post('/support/tickets/{ticket}/reply', [SupportController::class, 'reply'])->name('support.reply');
-    Route::get('/support/status', [SupportController::class, 'status'])->name('support.status');
-    Route::post('/support/test-message', [SupportController::class, 'testMessage'])->name('support.test-message');
+    // Suporte (comentado até implementar controller)
+    // Route::resource('support', SupportController::class)->only(['index', 'create', 'store', 'show']);
+    // Route::post('/support/tickets/{ticket}/close', [SupportController::class, 'close'])->name('support.close');
+    // Route::post('/support/tickets/{ticket}/reopen', [SupportController::class, 'reopen'])->name('support.reopen');
+    // Route::post('/support/tickets/{ticket}/reply', [SupportController::class, 'reply'])->name('support.reply');
+    // Route::get('/support/status', [SupportController::class, 'status'])->name('support.status');
+    // Route::post('/support/test-message', [SupportController::class, 'testMessage'])->name('support.test-message');
     
-    // Ajuda e Documentação
-    Route::get('/help', [HelpController::class, 'index'])->name('help.index');
-    Route::get('/help/faq', [HelpController::class, 'faq'])->name('help.faq');
-    Route::get('/help/tutorials', [HelpController::class, 'tutorials'])->name('help.tutorials');
-    Route::get('/help/privacy', [HelpController::class, 'privacy'])->name('help.privacy');
-    Route::get('/help/terms', [HelpController::class, 'terms'])->name('help.terms');
-    Route::get('/help/contact', [HelpController::class, 'contact'])->name('help.contact');
+    // Ajuda e Documentação (comentado até implementar controller)
+    // Route::get('/help', [HelpController::class, 'index'])->name('help.index');
+    // Route::get('/help/faq', [HelpController::class, 'faq'])->name('help.faq');
+    // Route::get('/help/tutorials', [HelpController::class, 'tutorials'])->name('help.tutorials');
+    // Route::get('/help/privacy', [HelpController::class, 'privacy'])->name('help.privacy');
+    // Route::get('/help/terms', [HelpController::class, 'terms'])->name('help.terms');
+    // Route::get('/help/contact', [HelpController::class, 'contact'])->name('help.contact');
     
-    // LGPD - Privacidade de Dados
-    Route::get('/privacy', [DataPrivacyController::class, 'index'])->name('privacy.index');
-    Route::post('/privacy/export', [DataPrivacyController::class, 'export'])->name('privacy.export');
-    Route::get('/privacy/download/{filename}', [DataPrivacyController::class, 'download'])->name('privacy.download');
-    Route::post('/privacy/request-deletion', [DataPrivacyController::class, 'requestDeletion'])->name('privacy.request-deletion');
-    Route::post('/privacy/cancel-deletion', [DataPrivacyController::class, 'cancelDeletion'])->name('privacy.cancel-deletion');
-    Route::get('/privacy/status', [DataPrivacyController::class, 'status'])->name('privacy.status');
+    // LGPD - Privacidade de Dados (comentado até implementar controller)
+    // Route::get('/privacy', [DataPrivacyController::class, 'index'])->name('privacy.index');
+    // Route::post('/privacy/export', [DataPrivacyController::class, 'export'])->name('privacy.export');
+    // Route::get('/privacy/download/{filename}', [DataPrivacyController::class, 'download'])->name('privacy.download');
+    // Route::post('/privacy/request-deletion', [DataPrivacyController::class, 'requestDeletion'])->name('privacy.request-deletion');
+    // Route::post('/privacy/cancel-deletion', [DataPrivacyController::class, 'cancelDeletion'])->name('privacy.cancel-deletion');
+    // Route::get('/privacy/status', [DataPrivacyController::class, 'status'])->name('privacy.status');
     
-    // Sistema de Idiomas
-    Route::get('/locale/current', [LocaleController::class, 'current'])->name('locale.current');
-    Route::get('/locale/translations', [LocaleController::class, 'translations'])->name('locale.translations');
-    Route::get('/locale/config', [LocaleController::class, 'config'])->name('locale.config');
-    Route::post('/locale/change/{locale}', [LocaleController::class, 'change'])->name('locale.change');
+    // Sistema de Idiomas (comentado até implementar controller)
+    // Route::get('/locale/current', [LocaleController::class, 'current'])->name('locale.current');
+    // Route::get('/locale/translations', [LocaleController::class, 'translations'])->name('locale.translations');
+    // Route::get('/locale/config', [LocaleController::class, 'config'])->name('locale.config');
+    // Route::post('/locale/change/{locale}', [LocaleController::class, 'change'])->name('locale.change');
 });
 
 // Rotas que requerem assinatura ativa
