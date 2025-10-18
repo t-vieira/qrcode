@@ -16,7 +16,7 @@ class DashboardController extends Controller
         
         // QR Codes recentes
         $recentQrCodes = $user->qrCodes()
-            ->latest()
+            ->orderBy('created_at', 'desc')
             ->limit(5)
             ->get();
 

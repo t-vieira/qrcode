@@ -20,7 +20,7 @@ class QrCodeController extends Controller
         $user = $request->user();
         
         // Buscar QR Codes do usuário
-        $qrCodes = $user->qrCodes()->latest()->paginate(20);
+        $qrCodes = $user->qrCodes()->orderBy('created_at', 'desc')->paginate(20);
         
         // Estatísticas básicas
         $stats = [

@@ -33,6 +33,12 @@ class LoginController extends Controller
         if (Auth::attempt($credentials, $remember)) {
             $request->session()->regenerate();
 
+            // Redirecionar admin para painel administrativo
+            if (Auth::user()->hasRole('admin')) {
+                return redirect()->intended(route('admin.dashboard'));
+            }
+
+            // Redirecionar usuário normal para dashboard
             return redirect()->intended(route('dashboard'));
         }
 

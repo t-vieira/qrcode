@@ -16,7 +16,7 @@ class AdminController extends Controller
     public function __construct()
     {
         $this->middleware('auth');
-        $this->middleware('role:admin');
+        $this->middleware('admin');
     }
 
     /**
@@ -35,7 +35,7 @@ class AdminController extends Controller
         ];
 
         // Usuários recentes
-        $recent_users = User::latest()->take(10)->get();
+        $recent_users = User::orderBy('created_at', 'desc')->take(10)->get();
 
         // QR Codes mais populares
         $popular_qr_codes = QrCode::withCount('scans')
@@ -207,7 +207,7 @@ class AdminController extends Controller
             });
         }
 
-        $subscriptions = $query->latest()->paginate(20);
+        $subscriptions = $query->orderBy('created_at', 'desc')->paginate(20);
 
         return view('admin.subscriptions.index', compact('subscriptions'));
     }
@@ -231,9 +231,23 @@ class AdminController extends Controller
             });
         }
 
-        $qrCodes = $query->latest()->paginate(20);
+        if ($request->filled('type')) {
+            $query->where('type', $request->type);
+        }
+
+        $qrCodes = $query->orderBy('created_at', 'desc')->paginate(20);
 
         return view('admin.qr-codes.index', compact('qrCodes'));
+    }
+
+    /**
+     * Exibir QR Code específico
+     */
+    public function showQrCode(QrCode $qrCode)
+    {
+        $qrCode->load(['user', 'scans']);
+        
+        return view('admin.qr-codes.show', compact('qrCode'));
     }
 
     /**
@@ -252,7 +266,7 @@ class AdminController extends Controller
                   });
         }
 
-        $teams = $query->latest()->paginate(20);
+        $teams = $query->orderBy('created_at', 'desc')->paginate(20);
 
         return view('admin.teams.index', compact('teams'));
     }

@@ -39,20 +39,11 @@ Route::get('/help/privacy', function () {
     return view('help.privacy');
 })->name('help.privacy');
 
-// Autenticação (deve vir antes da rota catch-all)
+// Autenticação
 Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [LoginController::class, 'login']);
 Route::get('/register', [RegisterController::class, 'showRegistrationForm'])->name('register');
 Route::post('/register', [RegisterController::class, 'register']);
-
-// Redirecionamento de QR Codes (deve vir por último)
-Route::get('/{shortCode}', [RedirectController::class, 'redirect'])
-    ->where('shortCode', '[a-zA-Z0-9\-_]+')
-    ->name('qr.redirect');
-
-Route::get('/qr/text/{encodedContent}', [RedirectController::class, 'showText'])
-    ->name('qr.text');
-
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
 // Webhooks (sem autenticação)
@@ -167,6 +158,7 @@ Route::middleware(['admin'])->prefix('admin')->name('admin.')->group(function ()
     
     // Gerenciamento de QR Codes
     Route::get('/qr-codes', [AdminController::class, 'qrCodes'])->name('qr-codes');
+    Route::get('/qr-codes/{qrCode}', [AdminController::class, 'showQrCode'])->name('qr-codes.show');
     
     // Gerenciamento de equipes
     Route::get('/teams', [AdminController::class, 'teams'])->name('teams');
@@ -176,3 +168,11 @@ Route::middleware(['admin'])->prefix('admin')->name('admin.')->group(function ()
 Route::middleware(['auth', 'verified', 'subscription'])->group(function () {
     // Funcionalidades avançadas aqui
 });
+
+// Redirecionamento de QR Codes (DEVE vir por último para não interceptar outras rotas)
+Route::get('/{shortCode}', [RedirectController::class, 'redirect'])
+    ->where('shortCode', '[a-zA-Z0-9\-_]+')
+    ->name('qr.redirect');
+
+Route::get('/qr/text/{encodedContent}', [RedirectController::class, 'showText'])
+    ->name('qr.text');

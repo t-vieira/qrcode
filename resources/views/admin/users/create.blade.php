@@ -1,9 +1,9 @@
-@extends('layouts.app')
+@extends('layouts.admin')
 
 @section('title', 'Criar Usuário')
 
 @section('content')
-<div class="min-h-screen bg-gray-50 py-12">
+<div class="p-6">
     <div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
         <!-- Header -->
         <div class="mb-8">
