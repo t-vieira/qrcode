@@ -2,210 +2,158 @@
 
 namespace App\Services;
 
-use App\Models\QrCode;
-use App\Services\QrTypes\QrTypeInterface;
-use Endroid\QrCode\Builder\BuilderInterface;
-use Endroid\QrCode\Builder\Builder;
-use Endroid\QrCode\Encoding\Encoding;
-use Endroid\QrCode\ErrorCorrectionLevel\ErrorCorrectionLevelHigh;
-use Endroid\QrCode\Label\Label;
-use Endroid\QrCode\Logo\Logo;
-use Endroid\QrCode\RoundBlockSizeMode\RoundBlockSizeModeMargin;
+use Endroid\QrCode\QrCode;
 use Endroid\QrCode\Writer\PngWriter;
 use Endroid\QrCode\Writer\SvgWriter;
-use Endroid\QrCode\Writer\EpsWriter;
 use Endroid\QrCode\Color\Color;
+use Endroid\QrCode\Encoding\Encoding;
+use Endroid\QrCode\ErrorCorrectionLevel\ErrorCorrectionLevelLow;
+use Endroid\QrCode\RoundBlockSizeMode\RoundBlockSizeModeMargin;
 use Endroid\QrCode\Writer\Result\ResultInterface;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class QrCodeGeneratorService
 {
-    protected BuilderInterface $builder;
+    protected PngWriter $pngWriter;
+    protected SvgWriter $svgWriter;
 
     public function __construct()
     {
-        // Configurações otimizadas para servidor compartilhado
-        $maxResolution = config('qrcode.max_resolution', 1500);
-        $defaultResolution = min(300, $maxResolution);
-        
-        $this->builder = Builder::create()
-            ->writer(new PngWriter())
-            ->writerOptions([])
-            ->data('')
-            ->encoding(new Encoding('UTF-8'))
-            ->errorCorrectionLevel(new ErrorCorrectionLevelHigh())
-            ->size($defaultResolution)
-            ->margin(10)
-            ->roundBlockSizeMode(new RoundBlockSizeModeMargin());
+        $this->pngWriter = new PngWriter();
+        $this->svgWriter = new SvgWriter();
     }
 
-    public function generate(QrCode $qrCode): string
+    /**
+     * Gerar QR Code e salvar como arquivo
+     */
+    public function generateAndSave(string $content, string $filename, string $format = 'png'): string
     {
-        $content = $this->getContentForQrCode($qrCode);
-        $design = $qrCode->design ?? [];
+        $qrCode = $this->createQrCode($content);
         
-        $this->builder->data($content);
+        // Escolher o writer baseado no formato
+        $writer = $format === 'svg' ? $this->svgWriter : $this->pngWriter;
         
-        // Aplicar customizações de design
-        $this->applyDesign($design);
+        // Gerar o resultado
+        $result = $writer->write($qrCode);
         
-        // Gerar o QR Code
-        $result = $this->builder->build();
+        // Definir o caminho do arquivo
+        $filePath = 'qrcodes/' . $filename . '.' . $format;
         
         // Salvar o arquivo
-        $filePath = $this->saveQrCode($qrCode, $result);
+        Storage::disk('public')->put($filePath, $result->getString());
         
         return $filePath;
     }
 
-    protected function getContentForQrCode(QrCode $qrCode): string
+    /**
+     * Gerar QR Code e retornar como string base64
+     */
+    public function generateBase64(string $content, string $format = 'png'): string
     {
-        $typeClass = "App\\Services\\QrTypes\\" . ucfirst($qrCode->type) . "QrType";
+        $qrCode = $this->createQrCode($content);
         
-        if (class_exists($typeClass)) {
-            $typeInstance = new $typeClass;
-            if ($typeInstance instanceof QrTypeInterface) {
-                return $typeInstance->generateContent($qrCode->content);
-            }
-        }
-
-        // Fallback para tipos básicos
-        return match ($qrCode->type) {
-            'url' => $qrCode->content['url'] ?? '',
-            'text' => $qrCode->content['text'] ?? '',
-            'email' => $this->generateEmailContent($qrCode->content),
-            'phone' => 'tel:' . ($qrCode->content['number'] ?? ''),
-            'sms' => 'sms:' . ($qrCode->content['number'] ?? '') . ':' . ($qrCode->content['message'] ?? ''),
-            'wifi' => $this->generateWifiContent($qrCode->content),
-            default => $qrCode->content['url'] ?? $qrCode->content['text'] ?? '',
-        };
+        // Escolher o writer baseado no formato
+        $writer = $format === 'svg' ? $this->svgWriter : $this->pngWriter;
+        
+        // Gerar o resultado
+        $result = $writer->write($qrCode);
+        
+        return 'data:image/' . $format . ';base64,' . base64_encode($result->getString());
     }
 
-    protected function applyDesign(array $design): void
+    /**
+     * Criar instância do QR Code com configurações padrão
+     */
+    protected function createQrCode(string $content): QrCode
     {
-        // Cores
-        $foregroundColor = $design['foregroundColor'] ?? '#000000';
-        $backgroundColor = $design['backgroundColor'] ?? '#ffffff';
-        $eyeColor = $design['eyeColor'] ?? $foregroundColor;
-
-        $this->builder
-            ->foregroundColor(new Color($foregroundColor))
-            ->backgroundColor(new Color($backgroundColor));
-
-        // Tamanho (limitado para servidor compartilhado)
-        if (isset($design['resolution'])) {
-            $maxResolution = config('qrcode.max_resolution', 1500);
-            $resolution = min($design['resolution'], $maxResolution);
-            $this->builder->size($resolution);
-        }
-
-        // Logo
-        if (!empty($design['logo']) && Storage::exists($design['logo'])) {
-            $logoPath = Storage::path($design['logo']);
-            $logo = Logo::create($logoPath)
-                ->setResizeToWidth(60)
-                ->setResizeToHeight(60);
-            $this->builder->logo($logo);
-        }
-
-        // Label/Sticker
-        if (!empty($design['sticker'])) {
-            $label = Label::create($design['sticker'])
-                ->setTextColor(new Color('#000000'));
-            $this->builder->label($label);
-        }
+        return QrCode::create($content)
+            ->setEncoding(new Encoding('UTF-8'))
+            ->setErrorCorrectionLevel(new ErrorCorrectionLevelLow())
+            ->setSize(300)
+            ->setMargin(10)
+            ->setRoundBlockSizeMode(new RoundBlockSizeModeMargin())
+            ->setForegroundColor(new Color(0, 0, 0))
+            ->setBackgroundColor(new Color(255, 255, 255));
     }
 
-    protected function saveQrCode(QrCode $qrCode, ResultInterface $result): string
-    {
-        $format = $qrCode->format ?? 'png';
-        $fileName = Str::slug($qrCode->name) . '_' . $qrCode->id . '.' . $format;
-        $directory = "qrcodes/{$qrCode->user_id}";
-        
-        // Criar diretório se não existir
-        if (!Storage::exists($directory)) {
-            Storage::makeDirectory($directory);
-        }
-        
-        $filePath = "{$directory}/{$fileName}";
-        
-        // Salvar o arquivo
-        Storage::put($filePath, $result->getString());
-        
-        return $filePath;
+    /**
+     * Gerar QR Code com configurações customizadas
+     */
+    public function generateCustom(
+        string $content,
+        int $size = 300,
+        string $foregroundColor = '#000000',
+        string $backgroundColor = '#FFFFFF',
+        int $margin = 10
+    ): QrCode {
+        return QrCode::create($content)
+            ->setEncoding(new Encoding('UTF-8'))
+            ->setErrorCorrectionLevel(new ErrorCorrectionLevelLow())
+            ->setSize($size)
+            ->setMargin($margin)
+            ->setRoundBlockSizeMode(new RoundBlockSizeModeMargin())
+            ->setForegroundColor(new Color(
+                hexdec(substr($foregroundColor, 1, 2)),
+                hexdec(substr($foregroundColor, 3, 2)),
+                hexdec(substr($foregroundColor, 5, 2))
+            ))
+            ->setBackgroundColor(new Color(
+                hexdec(substr($backgroundColor, 1, 2)),
+                hexdec(substr($backgroundColor, 3, 2)),
+                hexdec(substr($backgroundColor, 5, 2))
+            ));
     }
 
-    protected function generateEmailContent(array $content): string
-    {
-        $to = $content['to'] ?? '';
-        $subject = $content['subject'] ?? '';
-        $body = $content['body'] ?? '';
+    /**
+     * Gerar QR Code com logo
+     */
+    public function generateWithLogo(
+        string $content,
+        string $logoPath,
+        int $logoSize = 60,
+        string $format = 'png'
+    ): string {
+        $qrCode = $this->createQrCode($content);
         
-        $mailto = "mailto:{$to}";
-        
-        $params = [];
-        if ($subject) {
-            $params[] = "subject=" . urlencode($subject);
-        }
-        if ($body) {
-            $params[] = "body=" . urlencode($body);
-        }
-        
-        if (!empty($params)) {
-            $mailto .= '?' . implode('&', $params);
+        // Adicionar logo se existir
+        if (Storage::disk('public')->exists($logoPath)) {
+            $logoData = Storage::disk('public')->get($logoPath);
+            $qrCode->setLogoPath($logoPath);
+            $qrCode->setLogoSize($logoSize);
         }
         
-        return $mailto;
+        $writer = $format === 'svg' ? $this->svgWriter : $this->pngWriter;
+        $result = $writer->write($qrCode);
+        
+        return 'data:image/' . $format . ';base64,' . base64_encode($result->getString());
     }
 
-    protected function generateWifiContent(array $content): string
+    /**
+     * Gerar nome único para arquivo
+     */
+    public function generateUniqueFilename(): string
     {
-        $ssid = $content['ssid'] ?? '';
-        $password = $content['password'] ?? '';
-        $security = $content['security'] ?? 'WPA';
-        $hidden = $content['hidden'] ?? false;
-        
-        $wifi = "WIFI:T:{$security};S:{$ssid};P:{$password}";
-        
-        if ($hidden) {
-            $wifi .= ';H:true';
+        return Str::random(12) . '_' . time();
+    }
+
+    /**
+     * Obter URL do QR Code
+     */
+    public function getQrCodeUrl(string $filePath): string
+    {
+        return Storage::disk('public')->url($filePath);
+    }
+
+    /**
+     * Deletar arquivo do QR Code
+     */
+    public function deleteQrCodeFile(string $filePath): bool
+    {
+        if (Storage::disk('public')->exists($filePath)) {
+            return Storage::disk('public')->delete($filePath);
         }
         
-        $wifi .= ';;';
-        
-        return $wifi;
-    }
-
-    public function generatePreview(string $content, array $design = []): string
-    {
-        $this->builder->data($content);
-        $this->applyDesign($design);
-        
-        $result = $this->builder->build();
-        
-        return 'data:image/png;base64,' . base64_encode($result->getString());
-    }
-
-    public function download(QrCode $qrCode, string $format = null): string
-    {
-        $format = $format ?? $qrCode->format;
-        $content = $this->getContentForQrCode($qrCode);
-        $design = $qrCode->design ?? [];
-        
-        // Configurar writer baseado no formato
-        $writer = match ($format) {
-            'svg' => new SvgWriter(),
-            'eps' => new EpsWriter(),
-            default => new PngWriter(),
-        };
-        
-        $this->builder->writer($writer);
-        $this->builder->data($content);
-        $this->applyDesign($design);
-        
-        $result = $this->builder->build();
-        
-        return $result->getString();
+        return false;
     }
 }

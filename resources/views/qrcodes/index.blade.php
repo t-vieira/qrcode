@@ -113,11 +113,17 @@
                             <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                                 <div class="flex items-center">
                                     <div class="flex-shrink-0">
-                                        <div class="h-12 w-12 bg-gray-200 rounded flex items-center justify-center">
-                                            <svg class="h-6 w-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-                                            </svg>
-                                        </div>
+                                        @if($qrCode->file_path && \Storage::disk('public')->exists($qrCode->file_path))
+                                            <img src="{{ \Storage::disk('public')->url($qrCode->file_path) }}" 
+                                                 alt="{{ $qrCode->name }}" 
+                                                 class="h-12 w-12 rounded">
+                                        @else
+                                            <div class="h-12 w-12 bg-gray-200 rounded flex items-center justify-center">
+                                                <svg class="h-6 w-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                                                </svg>
+                                            </div>
+                                        @endif
                                     </div>
                                     <div class="ml-4">
                                         <h4 class="text-sm font-medium text-gray-900">{{ $qrCode->name }}</h4>

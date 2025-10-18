@@ -152,8 +152,8 @@
                             <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                                 <div class="flex items-center">
                                     <div class="flex-shrink-0">
-                                        @if($qrCode->file_path)
-                                            <img src="{{ asset('storage/' . $qrCode->file_path) }}" alt="{{ $qrCode->name }}" class="h-10 w-10 rounded">
+                                        @if($qrCode->file_path && \Storage::disk('public')->exists($qrCode->file_path))
+                                            <img src="{{ \Storage::disk('public')->url($qrCode->file_path) }}" alt="{{ $qrCode->name }}" class="h-10 w-10 rounded">
                                         @else
                                             <div class="h-10 w-10 bg-gray-200 rounded flex items-center justify-center">
                                                 <svg class="h-6 w-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">

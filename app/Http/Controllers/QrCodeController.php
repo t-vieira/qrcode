@@ -3,11 +3,18 @@
 namespace App\Http\Controllers;
 
 use App\Models\QrCode;
+use App\Services\QrCodeGeneratorService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
 class QrCodeController extends Controller
 {
+    protected QrCodeGeneratorService $qrGenerator;
+
+    public function __construct(QrCodeGeneratorService $qrGenerator)
+    {
+        $this->qrGenerator = $qrGenerator;
+    }
     public function index(Request $request)
     {
         $user = $request->user();
@@ -44,11 +51,18 @@ class QrCodeController extends Controller
         // Gerar código curto único
         $shortCode = $this->generateUniqueShortCode();
         
+        // Gerar nome único para o arquivo
+        $filename = $this->qrGenerator->generateUniqueFilename();
+        
+        // Gerar e salvar o QR Code
+        $filePath = $this->qrGenerator->generateAndSave($request->content, $filename, 'png');
+        
         $qrCode = $user->qrCodes()->create([
             'name' => $request->name,
             'type' => $request->type,
             'content' => $request->content,
             'short_code' => $shortCode,
+            'file_path' => $filePath,
             'status' => 'active',
             'is_dynamic' => false, // Por enquanto, sempre estático
         ]);
@@ -89,10 +103,27 @@ class QrCodeController extends Controller
             'content' => 'required|string',
         ]);
 
-        $qrCode->update([
-            'name' => $request->name,
-            'content' => $request->content,
-        ]);
+        // Se o conteúdo mudou, regenerar o QR Code
+        if ($qrCode->content !== $request->content) {
+            // Deletar arquivo antigo
+            if ($qrCode->file_path) {
+                $this->qrGenerator->deleteQrCodeFile($qrCode->file_path);
+            }
+            
+            // Gerar novo arquivo
+            $filename = $this->qrGenerator->generateUniqueFilename();
+            $filePath = $this->qrGenerator->generateAndSave($request->content, $filename, 'png');
+            
+            $qrCode->update([
+                'name' => $request->name,
+                'content' => $request->content,
+                'file_path' => $filePath,
+            ]);
+        } else {
+            $qrCode->update([
+                'name' => $request->name,
+            ]);
+        }
 
         return redirect()->route('qrcodes.show', $qrCode)
             ->with('success', 'QR Code atualizado com sucesso!');
@@ -103,6 +134,11 @@ class QrCodeController extends Controller
         // Verificar se o usuário pode deletar este QR Code
         if ($qrCode->user_id !== auth()->id()) {
             abort(403);
+        }
+
+        // Deletar arquivo do QR Code
+        if ($qrCode->file_path) {
+            $this->qrGenerator->deleteQrCodeFile($qrCode->file_path);
         }
 
         $qrCode->delete();
@@ -118,12 +154,20 @@ class QrCodeController extends Controller
             abort(403);
         }
 
-        // Por enquanto, retornar uma mensagem
-        return response()->json([
-            'message' => 'Download em desenvolvimento',
-            'format' => $format,
-            'qr_code' => $qrCode->name
-        ]);
+        // Se o formato solicitado for diferente do arquivo atual, gerar novo
+        if ($format !== 'png' || !$qrCode->file_path) {
+            $filename = $this->qrGenerator->generateUniqueFilename();
+            $filePath = $this->qrGenerator->generateAndSave($qrCode->content, $filename, $format);
+        } else {
+            $filePath = $qrCode->file_path;
+        }
+
+        // Verificar se o arquivo existe
+        if (!\Storage::disk('public')->exists($filePath)) {
+            abort(404, 'Arquivo do QR Code não encontrado');
+        }
+
+        return \Storage::disk('public')->download($filePath, $qrCode->name . '.' . $format);
     }
 
     public function preview(Request $request)
@@ -133,9 +177,12 @@ class QrCodeController extends Controller
             'type' => 'required|string',
         ]);
 
-        // Por enquanto, retornar uma resposta simples
+        // Gerar preview do QR Code
+        $previewBase64 = $this->qrGenerator->generateBase64($request->content, 'png');
+
         return response()->json([
-            'message' => 'Preview em desenvolvimento',
+            'success' => true,
+            'preview_url' => $previewBase64,
             'content' => $request->content,
             'type' => $request->type
         ]);

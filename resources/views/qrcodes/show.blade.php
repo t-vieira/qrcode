@@ -30,12 +30,18 @@
                     <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">Visualização</h3>
                     <div class="text-center">
                         <div class="inline-block p-4 bg-white border-2 border-gray-200 rounded-lg">
-                            <div class="w-48 h-48 bg-gray-100 rounded flex items-center justify-center">
-                                <svg class="h-24 w-24 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-                                </svg>
-                            </div>
-                            <p class="mt-2 text-sm text-gray-500">QR Code será gerado aqui</p>
+                            @if($qrCode->file_path && \Storage::disk('public')->exists($qrCode->file_path))
+                                <img src="{{ \Storage::disk('public')->url($qrCode->file_path) }}" 
+                                     alt="{{ $qrCode->name }}" 
+                                     class="w-48 h-48 rounded">
+                            @else
+                                <div class="w-48 h-48 bg-gray-100 rounded flex items-center justify-center">
+                                    <svg class="h-24 w-24 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                                    </svg>
+                                </div>
+                                <p class="mt-2 text-sm text-gray-500">QR Code não encontrado</p>
+                            @endif
                         </div>
                     </div>
                     
