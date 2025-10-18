@@ -138,6 +138,9 @@
                                     <a href="{{ route('qrcodes.show', $qrCode) }}" class="text-primary-600 hover:text-primary-900 text-sm font-medium">
                                         Ver
                                     </a>
+                                    <a href="{{ route('qrcodes.scans', $qrCode) }}" class="text-green-600 hover:text-green-900 text-sm font-medium">
+                                        Estatísticas
+                                    </a>
                                     <a href="{{ route('qrcodes.edit', $qrCode) }}" class="text-blue-600 hover:text-blue-900 text-sm font-medium">
                                         Editar
                                     </a>
