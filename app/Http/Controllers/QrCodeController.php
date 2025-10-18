@@ -55,7 +55,9 @@ class QrCodeController extends Controller
         $filename = $this->qrGenerator->generateUniqueFilename();
         
         // Gerar e salvar o QR Code
+        \Log::info('Generating QR Code', ['content' => $request->content, 'filename' => $filename]);
         $filePath = $this->qrGenerator->generateAndSave($request->content, $filename, 'svg');
+        \Log::info('QR Code generated', ['filePath' => $filePath]);
         
         $qrCode = $user->qrCodes()->create([
             'name' => $request->name,
