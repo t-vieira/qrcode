@@ -77,7 +77,8 @@ class QrCodeController extends Controller
     public function show(QrCode $qrCode)
     {
         // Verificar se o usuário pode acessar este QR Code
-        if ($qrCode->user_id !== auth()->id()) {
+        // Admins podem acessar qualquer QR code, usuários normais apenas os seus
+        if ($qrCode->user_id !== auth()->id() && !auth()->user()->hasRole('admin')) {
             abort(403);
         }
 
@@ -150,7 +151,8 @@ class QrCodeController extends Controller
     public function update(Request $request, QrCode $qrCode)
     {
         // Verificar se o usuário pode editar este QR Code
-        if ($qrCode->user_id !== auth()->id()) {
+        // Admins podem editar qualquer QR code, usuários normais apenas os seus
+        if ($qrCode->user_id !== auth()->id() && !auth()->user()->hasRole('admin')) {
             abort(403);
         }
 
@@ -189,7 +191,8 @@ class QrCodeController extends Controller
     public function destroy(QrCode $qrCode)
     {
         // Verificar se o usuário pode deletar este QR Code
-        if ($qrCode->user_id !== auth()->id()) {
+        // Admins podem deletar qualquer QR code, usuários normais apenas os seus
+        if ($qrCode->user_id !== auth()->id() && !auth()->user()->hasRole('admin')) {
             abort(403);
         }
 
@@ -207,7 +210,8 @@ class QrCodeController extends Controller
     public function download(QrCode $qrCode, $format = 'png')
     {
         // Verificar se o usuário pode baixar este QR Code
-        if ($qrCode->user_id !== auth()->id()) {
+        // Admins podem baixar qualquer QR code, usuários normais apenas os seus
+        if ($qrCode->user_id !== auth()->id() && !auth()->user()->hasRole('admin')) {
             abort(403);
         }
 

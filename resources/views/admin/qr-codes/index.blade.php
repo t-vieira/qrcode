@@ -112,10 +112,28 @@
                                            class="text-primary-600 hover:text-primary-900 text-sm font-medium">
                                             Ver
                                         </a>
+                                        <a href="{{ route('qrcodes.edit', $qrCode) }}" 
+                                           class="text-blue-600 hover:text-blue-900 text-sm font-medium">
+                                            Editar
+                                        </a>
+                                        <a href="{{ route('qrcodes.download', $qrCode) }}" 
+                                           class="text-green-600 hover:text-green-900 text-sm font-medium">
+                                            Baixar
+                                        </a>
                                         <a href="{{ route('admin.users.show', $qrCode->user) }}" 
                                            class="text-gray-600 hover:text-gray-900 text-sm font-medium">
                                             Usuário
                                         </a>
+                                        <form method="POST" action="{{ route('qrcodes.destroy', $qrCode) }}" 
+                                              class="inline" 
+                                              onsubmit="return confirm('Tem certeza que deseja deletar este QR Code? Esta ação não pode ser desfeita.')">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" 
+                                                    class="text-red-600 hover:text-red-900 text-sm font-medium">
+                                                Deletar
+                                            </button>
+                                        </form>
                                     </div>
                                 </div>
                             </div>
