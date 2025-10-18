@@ -47,16 +47,16 @@ class CompileAssets extends Command
             // Instalar dependências se necessário
             if (!$this->areDependenciesInstalled()) {
                 $this->info('📦 Installing dependencies...');
-                $this->runCommand('npm install');
+                $this->executeCommand('npm install');
             }
 
             // Compilar assets
             if ($isProduction) {
                 $this->info('🏭 Compiling for production...');
-                $this->runCommand('npm run production');
+                $this->executeCommand('npm run production');
             } else {
                 $this->info('🔧 Compiling for development...');
-                $this->runCommand('npm run dev');
+                $this->executeCommand('npm run dev');
             }
 
             // Verificar se os arquivos foram gerados
@@ -110,7 +110,7 @@ class CompileAssets extends Command
     /**
      * Executar comando
      */
-    private function runCommand(string $command): void
+    private function executeCommand(string $command): void
     {
         $this->line("Running: {$command}");
         
