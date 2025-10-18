@@ -55,7 +55,7 @@ class QrCodeController extends Controller
         $filename = $this->qrGenerator->generateUniqueFilename();
         
         // Gerar e salvar o QR Code
-        $filePath = $this->qrGenerator->generateAndSave($request->content, $filename, 'png');
+        $filePath = $this->qrGenerator->generateAndSave($request->content, $filename, 'svg');
         
         $qrCode = $user->qrCodes()->create([
             'name' => $request->name,
@@ -112,7 +112,7 @@ class QrCodeController extends Controller
             
             // Gerar novo arquivo
             $filename = $this->qrGenerator->generateUniqueFilename();
-            $filePath = $this->qrGenerator->generateAndSave($request->content, $filename, 'png');
+            $filePath = $this->qrGenerator->generateAndSave($request->content, $filename, 'svg');
             
             $qrCode->update([
                 'name' => $request->name,
@@ -155,7 +155,7 @@ class QrCodeController extends Controller
         }
 
         // Se o formato solicitado for diferente do arquivo atual, gerar novo
-        if ($format !== 'png' || !$qrCode->file_path) {
+        if ($format !== 'svg' || !$qrCode->file_path) {
             $filename = $this->qrGenerator->generateUniqueFilename();
             $filePath = $this->qrGenerator->generateAndSave($qrCode->content, $filename, $format);
         } else {
@@ -178,7 +178,7 @@ class QrCodeController extends Controller
         ]);
 
         // Gerar preview do QR Code
-        $previewBase64 = $this->qrGenerator->generateBase64($request->content, 'png');
+        $previewBase64 = $this->qrGenerator->generateBase64($request->content, 'svg');
 
         return response()->json([
             'success' => true,
