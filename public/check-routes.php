@@ -9,20 +9,21 @@ try {
     $app = require_once __DIR__ . '/../bootstrap/app.php';
     echo "<p style='color: green;'>✅ Laravel carregado com sucesso!</p>";
     
-    // Verificar qual arquivo de rotas está sendo usado
-    $reflection = new ReflectionClass($app);
-    $routingProperty = $reflection->getProperty('routing');
-    $routingProperty->setAccessible(true);
-    $routing = $routingProperty->getValue($app);
+    // Verificar arquivos de rotas disponíveis
+    $routeFiles = [
+        'routes/web.php',
+        'routes/web-working.php', 
+        'routes/web-minimal.php'
+    ];
     
-    echo "<p><strong>Arquivo de rotas:</strong> " . $routing['web'] . "</p>";
-    
-    // Testar se o arquivo existe
-    $routeFile = __DIR__ . '/../' . $routing['web'];
-    if (file_exists($routeFile)) {
-        echo "<p style='color: green;'>✅ Arquivo de rotas existe: " . $routing['web'] . "</p>";
-    } else {
-        echo "<p style='color: red;'>❌ Arquivo de rotas não existe: " . $routing['web'] . "</p>";
+    echo "<h3>Arquivos de Rotas:</h3>";
+    foreach ($routeFiles as $file) {
+        $fullPath = __DIR__ . '/../' . $file;
+        if (file_exists($fullPath)) {
+            echo "<p style='color: green;'>✅ {$file} - Existe</p>";
+        } else {
+            echo "<p style='color: red;'>❌ {$file} - Não existe</p>";
+        }
     }
     
 } catch (Throwable $e) {
