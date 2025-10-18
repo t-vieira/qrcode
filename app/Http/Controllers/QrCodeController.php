@@ -190,9 +190,23 @@ class QrCodeController extends Controller
 
     public function destroy(QrCode $qrCode)
     {
+        // Log para debug
+        \Log::info('QR Code destroy called', [
+            'qr_code_id' => $qrCode->id,
+            'qr_code_name' => $qrCode->name,
+            'user_id' => auth()->id(),
+            'qr_code_user_id' => $qrCode->user_id,
+            'is_admin' => auth()->user()->hasRole('admin')
+        ]);
+
         // Verificar se o usuário pode deletar este QR Code
         // Admins podem deletar qualquer QR code, usuários normais apenas os seus
         if ($qrCode->user_id !== auth()->id() && !auth()->user()->hasRole('admin')) {
+            \Log::warning('Access denied for QR code deletion', [
+                'qr_code_id' => $qrCode->id,
+                'user_id' => auth()->id(),
+                'qr_code_user_id' => $qrCode->user_id
+            ]);
             abort(403);
         }
 
@@ -202,6 +216,17 @@ class QrCodeController extends Controller
         }
 
         $qrCode->delete();
+        
+        \Log::info('QR Code deleted successfully', [
+            'qr_code_id' => $qrCode->id,
+            'user_id' => auth()->id()
+        ]);
+
+        // Redirecionar baseado no tipo de usuário
+        if (auth()->user()->hasRole('admin')) {
+            return redirect()->route('admin.qr-codes')
+                ->with('success', 'QR Code deletado com sucesso!');
+        }
 
         return redirect()->route('qrcodes.index')
             ->with('success', 'QR Code deletado com sucesso!');
