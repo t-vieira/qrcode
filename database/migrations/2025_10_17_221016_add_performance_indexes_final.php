@@ -47,9 +47,9 @@ return new class extends Migration
         if ($this->columnExists($table, $column) && !$this->indexExists($table, $indexName)) {
             try {
                 DB::statement("CREATE INDEX IF NOT EXISTS {$indexName} ON {$table} ({$column})");
-                $this->command->info("Created index: {$indexName}");
+                // Created index: {$indexName}
             } catch (\Exception $e) {
-                $this->command->warn("Failed to create index {$indexName}: " . $e->getMessage());
+                // Failed to create index {$indexName}: {$e->getMessage()}
             }
         }
     }
@@ -72,9 +72,9 @@ return new class extends Migration
             try {
                 $columnsStr = implode(', ', $columns);
                 DB::statement("CREATE INDEX IF NOT EXISTS {$indexName} ON {$table} ({$columnsStr})");
-                $this->command->info("Created composite index: {$indexName}");
+                // Created composite index: {$indexName}
             } catch (\Exception $e) {
-                $this->command->warn("Failed to create composite index {$indexName}: " . $e->getMessage());
+                // Failed to create composite index {$indexName}: {$e->getMessage()}
             }
         }
     }
@@ -84,7 +84,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        $this->command->info('Creating performance indexes...');
+        // Creating performance indexes...
 
         // Índices para tabela users
         if (Schema::hasTable('users')) {
@@ -186,7 +186,7 @@ return new class extends Migration
             $this->createCompositeIndexIfExists('support_tickets', ['user_id', 'status'], 'support_tickets_user_id_status_index');
         }
 
-        $this->command->info('Performance indexes creation completed!');
+        // Performance indexes creation completed!
     }
 
     /**
@@ -194,7 +194,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        $this->command->info('Removing performance indexes...');
+        // Removing performance indexes...
 
         // Remover índices de users
         if (Schema::hasTable('users')) {
@@ -289,7 +289,7 @@ return new class extends Migration
             $this->dropIndexIfExists('support_tickets', 'support_tickets_user_id_status_index');
         }
 
-        $this->command->info('Performance indexes removal completed!');
+        // Performance indexes removal completed!
     }
 
     /**
@@ -300,9 +300,9 @@ return new class extends Migration
         if ($this->indexExists($table, $indexName)) {
             try {
                 DB::statement("DROP INDEX IF EXISTS {$indexName}");
-                $this->command->info("Dropped index: {$indexName}");
+                // Dropped index: {$indexName}
             } catch (\Exception $e) {
-                $this->command->warn("Failed to drop index {$indexName}: " . $e->getMessage());
+                // Failed to drop index {$indexName}: {$e->getMessage()}
             }
         }
     }
