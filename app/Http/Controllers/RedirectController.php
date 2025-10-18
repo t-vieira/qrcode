@@ -17,12 +17,24 @@ class RedirectController extends Controller
 
     public function redirect(string $shortCode, Request $request): RedirectResponse
     {
+        // Log para debug
+        \Log::info('QR Code redirect called', [
+            'short_code' => $shortCode,
+            'request_url' => $request->url(),
+            'user_agent' => $request->userAgent(),
+            'ip_address' => $request->ip()
+        ]);
+
         // Buscar o QR Code pelo short_code
         $qrCode = QrCode::where('short_code', $shortCode)
             ->where('status', 'active')
             ->first();
 
         if (!$qrCode) {
+            \Log::warning('QR Code not found for redirect', [
+                'short_code' => $shortCode,
+                'all_qr_codes' => QrCode::pluck('short_code', 'id')->toArray()
+            ]);
             abort(404, 'QR Code não encontrado ou inativo.');
         }
 
