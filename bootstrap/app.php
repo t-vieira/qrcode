@@ -19,15 +19,16 @@ return Application::configure(basePath: dirname(__DIR__))
             'suspicious.activity' => \App\Http\Middleware\BlockSuspiciousActivity::class,
         ]);
         
-        $middleware->web(append: [
-            \App\Http\Middleware\SetLocale::class,
-            \App\Http\Middleware\SecurityHeaders::class,
-            \App\Http\Middleware\BlockSuspiciousActivity::class,
-        ]);
+        // Temporariamente desabilitar middlewares customizados para debug
+        // $middleware->web(append: [
+        //     \App\Http\Middleware\SetLocale::class,
+        //     \App\Http\Middleware\SecurityHeaders::class,
+        //     \App\Http\Middleware\BlockSuspiciousActivity::class,
+        // ]);
         
-        $middleware->web(prepend: [
-            \App\Http\Middleware\ValidateFileUpload::class,
-        ]);
+        // $middleware->web(prepend: [
+        //     \App\Http\Middleware\ValidateFileUpload::class,
+        // ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

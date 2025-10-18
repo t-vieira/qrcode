@@ -13,6 +13,11 @@ Route::get('/', function () {
     return view('welcome');
 })->name('home');
 
+// Rota de teste
+Route::get('/test-route', function () {
+    return 'Test route is working!';
+});
+
 // Páginas públicas de ajuda
 Route::get('/help/terms', function () {
     return view('help.terms');
@@ -22,21 +27,19 @@ Route::get('/help/privacy', function () {
     return view('help.privacy');
 })->name('help.privacy');
 
-// Redirecionamento de QR Codes (deve vir antes das rotas autenticadas)
+// Autenticação (deve vir antes da rota catch-all)
+Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
+Route::post('/login', [LoginController::class, 'login']);
+Route::get('/register', [RegisterController::class, 'showRegistrationForm'])->name('register');
+Route::post('/register', [RegisterController::class, 'register']);
+
+// Redirecionamento de QR Codes (deve vir por último)
 Route::get('/{shortCode}', [RedirectController::class, 'redirect'])
     ->where('shortCode', '[a-zA-Z0-9\-_]+')
     ->name('qr.redirect');
 
 Route::get('/qr/text/{encodedContent}', [RedirectController::class, 'showText'])
     ->name('qr.text');
-
-// Autenticação
-Route::middleware('guest')->group(function () {
-    Route::get('/register', [RegisterController::class, 'showRegistrationForm'])->name('register');
-    Route::post('/register', [RegisterController::class, 'register']);
-    Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
-    Route::post('/login', [LoginController::class, 'login']);
-});
 
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
