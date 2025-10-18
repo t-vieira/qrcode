@@ -17,19 +17,40 @@ class SecurityHeaders
     {
         $response = $next($request);
 
+        // Verificar se CSP está habilitado
+        if (!config('security.csp.enabled', true)) {
+            return $response;
+        }
+
         // Security Headers
-        $response->headers->set('X-Content-Type-Options', 'nosniff');
-        $response->headers->set('X-Frame-Options', 'DENY');
-        $response->headers->set('X-XSS-Protection', '1; mode=block');
-        $response->headers->set('Referrer-Policy', 'strict-origin-when-cross-origin');
-        $response->headers->set('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
+        $headers = config('security.headers', []);
+        
+        if (isset($headers['x_content_type_options'])) {
+            $response->headers->set('X-Content-Type-Options', $headers['x_content_type_options']);
+        }
+        if (isset($headers['x_frame_options'])) {
+            $response->headers->set('X-Frame-Options', $headers['x_frame_options']);
+        }
+        if (isset($headers['x_xss_protection'])) {
+            $response->headers->set('X-XSS-Protection', $headers['x_xss_protection']);
+        }
+        if (isset($headers['referrer_policy'])) {
+            $response->headers->set('Referrer-Policy', $headers['referrer_policy']);
+        }
+        if (isset($headers['permissions_policy'])) {
+            $response->headers->set('Permissions-Policy', $headers['permissions_policy']);
+        }
         
         // Content Security Policy
         $csp = $this->buildCSP($request);
-        $response->headers->set('Content-Security-Policy', $csp);
+        if (config('security.csp.report_only', false)) {
+            $response->headers->set('Content-Security-Policy-Report-Only', $csp);
+        } else {
+            $response->headers->set('Content-Security-Policy', $csp);
+        }
         
         // Strict Transport Security (apenas em HTTPS)
-        if ($request->isSecure()) {
+        if ($request->isSecure() && config('security.headers.strict_transport_security', true)) {
             $response->headers->set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
         }
 
@@ -41,57 +62,16 @@ class SecurityHeaders
      */
     private function buildCSP(Request $request): string
     {
-        $directives = [
-            'default-src' => ["'self'"],
-            'script-src' => [
-                "'self'",
-                "'unsafe-inline'", // Para Alpine.js
-                "'unsafe-eval'", // Para Chart.js
-                'https://www.google.com',
-                'https://www.gstatic.com',
-                'https://www.google-analytics.com',
-                'https://www.googletagmanager.com',
-                'https://cdn.jsdelivr.net',
-                'https://unpkg.com',
-            ],
-            'style-src' => [
-                "'self'",
-                "'unsafe-inline'", // Para Tailwind CSS
-                'https://fonts.googleapis.com',
-            ],
-            'font-src' => [
-                "'self'",
-                'https://fonts.gstatic.com',
-                'data:',
-            ],
-            'img-src' => [
-                "'self'",
-                'data:',
-                'blob:',
-                'https:',
-            ],
-            'connect-src' => [
-                "'self'",
-                'https://api.mercadopago.com',
-                'https://graph.facebook.com',
-                'https://api.whatsapp.com',
-                'https://ipapi.co',
-                'https://ip-api.com',
-            ],
-            'media-src' => [
-                "'self'",
-                'data:',
-                'blob:',
-            ],
-            'object-src' => ["'none'"],
-            'base-uri' => ["'self'"],
-            'form-action' => ["'self'"],
-            'frame-ancestors' => ["'none'"],
-        ];
+        $directives = config('security.csp_directives', []);
 
         $cspString = '';
         foreach ($directives as $directive => $sources) {
             $cspString .= $directive . ' ' . implode(' ', $sources) . '; ';
+        }
+
+        // Adicionar report-uri se configurado
+        if (config('security.csp.report_uri')) {
+            $cspString .= 'report-uri ' . config('security.csp.report_uri') . '; ';
         }
 
         return trim($cspString);

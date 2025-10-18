@@ -7,12 +7,11 @@
 
     <title>@yield('title', 'QR Code SaaS') - {{ config('app.name', 'QR Code SaaS') }}</title>
 
-    <!-- Fonts -->
-    <link rel="preconnect" href="https://fonts.bunny.net">
-    <link href="https://fonts.bunny.net/css?family=inter:300,400,500,600,700" rel="stylesheet" />
-
+    <!-- Styles -->
+    <link href="{{ mix('css/app.css') }}" rel="stylesheet">
+    
     <!-- Scripts -->
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <script src="{{ mix('js/app.js') }}" defer></script>
 </head>
 <body class="font-sans antialiased bg-gray-50">
     <div class="min-h-screen">
