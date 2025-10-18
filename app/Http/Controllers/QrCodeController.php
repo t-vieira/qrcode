@@ -121,9 +121,27 @@ class QrCodeController extends Controller
 
     public function show(QrCode $qrCode)
     {
+        // Log para debug
+        \Log::info('QR Code show called', [
+            'qr_code_id' => $qrCode->id,
+            'qr_code_name' => $qrCode->name,
+            'qr_code_user_id' => $qrCode->user_id,
+            'current_user_id' => auth()->id(),
+            'current_user_email' => auth()->user() ? auth()->user()->email : 'not_authenticated',
+            'is_admin' => auth()->user() ? auth()->user()->hasRole('admin') : false,
+            'can_access' => ($qrCode->user_id === auth()->id() || (auth()->user() && auth()->user()->hasRole('admin'))),
+            'request_method' => request()->method(),
+            'request_url' => request()->url()
+        ]);
+
         // Verificar se o usuário pode acessar este QR Code
         // Admins podem acessar qualquer QR code, usuários normais apenas os seus
         if ($qrCode->user_id !== auth()->id() && !auth()->user()->hasRole('admin')) {
+            \Log::warning('Access denied for QR code show', [
+                'qr_code_id' => $qrCode->id,
+                'qr_code_user_id' => $qrCode->user_id,
+                'current_user_id' => auth()->id()
+            ]);
             abort(403);
         }
 
