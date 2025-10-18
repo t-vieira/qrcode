@@ -28,6 +28,7 @@
                         </div>
 
                         <!-- Navigation Links -->
+                        @auth
                         <div class="hidden space-x-8 sm:-my-px sm:ml-10 sm:flex">
                             <a href="{{ route('dashboard') }}" 
                                class="inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium {{ request()->routeIs('dashboard') ? 'border-primary-500 text-gray-900' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' }}">
@@ -38,9 +39,11 @@
                                 QR Codes
                             </a>
                         </div>
+                        @endauth
                     </div>
 
                     <!-- Settings Dropdown -->
+                    @auth
                     <div class="hidden sm:ml-6 sm:flex sm:items-center">
                         <div class="ml-3 relative" x-data="{ open: false }">
                             <div>
@@ -74,6 +77,7 @@
                             </div>
                         </div>
                     </div>
+                    @endauth
 
                     <!-- Mobile menu button -->
                     <div class="-mr-2 flex items-center sm:hidden">
@@ -96,6 +100,7 @@
                  x-transition:leave-start="transform opacity-100 scale-100"
                  x-transition:leave-end="transform opacity-0 scale-95"
                  class="sm:hidden">
+                @auth
                 <div class="pt-2 pb-3 space-y-1">
                     <a href="{{ route('dashboard') }}" 
                        class="block pl-3 pr-4 py-2 border-l-4 text-base font-medium {{ request()->routeIs('dashboard') ? 'bg-primary-50 border-primary-500 text-primary-700' : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50 hover:border-gray-300' }}">
@@ -106,6 +111,8 @@
                         QR Codes
                     </a>
                 </div>
+                @endauth
+                @auth
                 <div class="pt-4 pb-3 border-t border-gray-200">
                     <div class="flex items-center px-4">
                         <div class="flex-shrink-0">
@@ -132,6 +139,7 @@
                         </form>
                     </div>
                 </div>
+                @endauth
             </div>
         </nav>
 
