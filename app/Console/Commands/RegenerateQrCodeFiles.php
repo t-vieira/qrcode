@@ -52,12 +52,12 @@ class RegenerateQrCodeFiles extends Command
                     $this->qrGenerator->deleteQrCodeFile($qrCode->file_path);
                 }
 
-                // Converter content para string se for array
-                $content = is_array($qrCode->content) ? json_encode($qrCode->content) : $qrCode->content;
+                // Gerar URL curta para redirecionamento
+                $shortUrl = url('/r/' . $qrCode->short_code);
                 
-                // Gerar novo arquivo
+                // Gerar novo arquivo com URL curta
                 $filename = $this->qrGenerator->generateUniqueFilename();
-                $filePath = $this->qrGenerator->generateAndSave($content, $filename, 'svg');
+                $filePath = $this->qrGenerator->generateAndSave($shortUrl, $filename, 'svg');
 
                 // Atualizar QR Code
                 $qrCode->update(['file_path' => $filePath]);

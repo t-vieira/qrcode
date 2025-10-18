@@ -3,26 +3,16 @@
 namespace App\Http\Controllers;
 
 use App\Models\QrCode;
-use App\Services\QrScanTracker;
-use App\Services\QueueService;
-use App\Services\CacheService;
+use App\Models\QrScan;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
+use Jenssegers\Agent\Agent;
 
 class RedirectController extends Controller
 {
-    protected QrScanTracker $scanTracker;
-    protected QueueService $queueService;
-    protected CacheService $cacheService;
-
-    public function __construct(
-        QrScanTracker $scanTracker,
-        QueueService $queueService,
-        CacheService $cacheService
-    ) {
-        $this->scanTracker = $scanTracker;
-        $this->queueService = $queueService;
-        $this->cacheService = $cacheService;
+    public function __construct()
+    {
+        // Sem dependências complexas por enquanto
     }
 
     public function redirect(string $shortCode, Request $request): RedirectResponse
@@ -36,12 +26,8 @@ class RedirectController extends Controller
             abort(404, 'QR Code não encontrado ou inativo.');
         }
 
-        // Processar scan em fila para melhor performance
-        $scanData = $this->prepareScanData($request);
-        $this->queueService->processQrCodeScan($qrCode, $scanData);
-        
-        // Incrementar contador em cache para tempo real
-        $this->cacheService->incrementScanCount($qrCode);
+        // Registrar o scan
+        $this->recordScan($qrCode, $request);
 
         // Obter o conteúdo para redirecionamento
         $content = $this->getRedirectContent($qrCode);
@@ -56,25 +42,25 @@ class RedirectController extends Controller
 
     protected function getRedirectContent(QrCode $qrCode): string
     {
-        $typeClass = "App\\Services\\QrTypes\\" . ucfirst($qrCode->type) . "QrType";
-        
-        if (class_exists($typeClass)) {
-            $typeInstance = new $typeClass;
-            if ($typeInstance instanceof \App\Services\QrTypes\QrTypeInterface) {
-                return $typeInstance->generateContent($qrCode->content);
-            }
+        // Se content é string (novo formato), usar diretamente
+        if (is_string($qrCode->content)) {
+            return $qrCode->content;
         }
 
-        // Fallback para tipos básicos
-        return match ($qrCode->type) {
-            'url' => $qrCode->content['url'] ?? '',
-            'text' => $qrCode->content['text'] ?? '',
-            'email' => $this->generateEmailContent($qrCode->content),
-            'phone' => 'tel:' . ($qrCode->content['number'] ?? ''),
-            'sms' => 'sms:' . ($qrCode->content['number'] ?? '') . ':' . ($qrCode->content['message'] ?? ''),
-            'wifi' => $this->generateWifiContent($qrCode->content),
-            default => $qrCode->content['url'] ?? $qrCode->content['text'] ?? '',
-        };
+        // Se content é array (formato antigo), extrair baseado no tipo
+        if (is_array($qrCode->content)) {
+            return match ($qrCode->type) {
+                'url' => $qrCode->content['url'] ?? '',
+                'text' => $qrCode->content['text'] ?? '',
+                'email' => $this->generateEmailContent($qrCode->content),
+                'phone' => 'tel:' . ($qrCode->content['number'] ?? ''),
+                'sms' => 'sms:' . ($qrCode->content['number'] ?? '') . ':' . ($qrCode->content['message'] ?? ''),
+                'wifi' => $this->generateWifiContent($qrCode->content),
+                default => $qrCode->content['url'] ?? $qrCode->content['text'] ?? '',
+            };
+        }
+
+        return '';
     }
 
     protected function performRedirect(string $type, string $content): RedirectResponse
@@ -143,22 +129,50 @@ class RedirectController extends Controller
     }
 
     /**
-     * Preparar dados do scan para processamento em fila
+     * Registrar scan do QR Code
      */
-    protected function prepareScanData(Request $request): array
+    protected function recordScan(QrCode $qrCode, Request $request): void
     {
-        $userAgent = $request->userAgent();
-        $ipAddress = $request->ip();
-        
-        // Detectar informações do dispositivo
-        $deviceData = $this->cacheService->getDeviceData($userAgent);
-        
-        // Obter dados de geolocalização
-        $locationData = $this->cacheService->getLocationData($ipAddress);
-        
-        return array_merge([
-            'ip_address' => $ipAddress,
-            'user_agent' => $userAgent,
-        ], $deviceData, $locationData);
+        try {
+            $agent = new Agent();
+            $userAgent = $request->userAgent();
+            $ipAddress = $request->ip();
+
+            // Detectar informações do dispositivo
+            $device = $agent->device() ?: 'Unknown';
+            $platform = $agent->platform() ?: 'Unknown';
+            $browser = $agent->browser() ?: 'Unknown';
+            $isMobile = $agent->isMobile() ? 1 : 0;
+            $isTablet = $agent->isTablet() ? 1 : 0;
+            $isDesktop = $agent->isDesktop() ? 1 : 0;
+
+            // Criar registro do scan
+            QrScan::create([
+                'qr_code_id' => $qrCode->id,
+                'ip_address' => $ipAddress,
+                'user_agent' => $userAgent,
+                'device' => $device,
+                'platform' => $platform,
+                'browser' => $browser,
+                'is_mobile' => $isMobile,
+                'is_tablet' => $isTablet,
+                'is_desktop' => $isDesktop,
+                'country' => null, // Pode ser implementado com API de geolocalização
+                'city' => null,
+                'latitude' => null,
+                'longitude' => null,
+                'scanned_at' => now(),
+            ]);
+
+            // Incrementar contador de scans no QR Code
+            $qrCode->increment('scan_count');
+
+        } catch (\Exception $e) {
+            // Log do erro mas não interromper o redirecionamento
+            \Log::error('Erro ao registrar scan do QR Code', [
+                'qr_code_id' => $qrCode->id,
+                'error' => $e->getMessage()
+            ]);
+        }
     }
 }

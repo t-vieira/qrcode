@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\QrCodeController;
+use App\Http\Controllers\RedirectController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
@@ -32,6 +33,9 @@ Route::post('/login', [LoginController::class, 'login']);
 Route::get('/register', [RegisterController::class, 'showRegistrationForm'])->name('register');
 Route::post('/register', [RegisterController::class, 'register']);
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
+
+// Redirecionamento de QR Codes (sem autenticação)
+Route::get('/r/{shortCode}', [RedirectController::class, 'redirect'])->name('qr.redirect');
 
 // Webhooks (sem autenticação)
 Route::post('/subscription/webhook', [SubscriptionController::class, 'webhook'])->name('subscription.webhook');

@@ -34,13 +34,21 @@ class DashboardController extends Controller
     {
         $totalQrCodes = $user->qrCodes()->count();
         
-        // Para simplificar, vamos usar valores padrão por enquanto
-        // Em produção, você pode implementar as consultas reais
+        // Buscar QR Codes do usuário
+        $qrCodeIds = $user->qrCodes()->pluck('id');
+        
+        // Calcular estatísticas reais
+        $totalScans = $user->qrCodes()->sum('scan_count');
+        $uniqueScans = \App\Models\QrScan::whereIn('qr_code_id', $qrCodeIds)->distinct('ip_address')->count();
+        $todayScans = \App\Models\QrScan::whereIn('qr_code_id', $qrCodeIds)
+            ->whereDate('scanned_at', today())
+            ->count();
+        
         return [
             'total_qr_codes' => $totalQrCodes,
-            'total_scans' => 0,
-            'unique_scans' => 0,
-            'today_scans' => 0,
+            'total_scans' => $totalScans,
+            'unique_scans' => $uniqueScans,
+            'today_scans' => $todayScans,
         ];
     }
 
