@@ -188,8 +188,16 @@ class QrCodeController extends Controller
             ->with('success', 'QR Code atualizado com sucesso!');
     }
 
-    public function destroy(QrCode $qrCode)
+    public function destroy($id)
     {
+        // Buscar o QR code manualmente
+        $qrCode = QrCode::find($id);
+        
+        if (!$qrCode) {
+            \Log::error('QR Code not found', ['qr_code_id' => $id]);
+            abort(404, 'QR Code não encontrado');
+        }
+        
         // Log para debug
         \Log::info('QR Code destroy called', [
             'qr_code_id' => $qrCode->id,
