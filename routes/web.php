@@ -170,6 +170,10 @@ Route::middleware(['auth', 'verified', 'subscription'])->group(function () {
 });
 
 // Redirecionamento de QR Codes (DEVE vir por último para não interceptar outras rotas)
+Route::get('/r/{shortCode}', [RedirectController::class, 'redirect'])
+    ->where('shortCode', '[a-zA-Z0-9\-_]+')
+    ->name('qr.redirect.r');
+
 Route::get('/{shortCode}', [RedirectController::class, 'redirect'])
     ->where('shortCode', '[a-zA-Z0-9\-_]+')
     ->name('qr.redirect');
