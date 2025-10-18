@@ -35,18 +35,42 @@ class QrCodeController extends Controller
 
     public function create()
     {
+        \Log::info('QR Code create page accessed', [
+            'user_id' => auth()->id(),
+            'user_email' => auth()->user() ? auth()->user()->email : 'not_authenticated',
+            'is_authenticated' => auth()->check(),
+            'request_method' => request()->method(),
+            'request_url' => request()->url(),
+            'user_agent' => request()->userAgent(),
+            'ip_address' => request()->ip()
+        ]);
+
         return view('qrcodes.create');
     }
 
     public function store(Request $request)
     {
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'type' => 'required|string|in:url,vcard,text,email,phone,sms,wifi,location',
-            'content' => 'required|string',
-        ]);
+        try {
+            // Log para debug
+            \Log::info('QR Code store called', [
+                'user_id' => auth()->id(),
+                'user_email' => auth()->user() ? auth()->user()->email : 'not_authenticated',
+                'is_authenticated' => auth()->check(),
+                'request_method' => request()->method(),
+                'request_url' => request()->url(),
+                'request_data' => $request->all(),
+                'csrf_token' => $request->input('_token'),
+                'user_agent' => $request->userAgent(),
+                'ip_address' => $request->ip()
+            ]);
 
-        $user = $request->user();
+            $request->validate([
+                'name' => 'required|string|max:255',
+                'type' => 'required|string|in:url,vcard,text,email,phone,sms,wifi,location',
+                'content' => 'required|string',
+            ]);
+
+            $user = $request->user();
         
         // Gerar código curto único
         $shortCode = $this->generateUniqueShortCode();
@@ -70,8 +94,29 @@ class QrCodeController extends Controller
             'is_dynamic' => false, // Por enquanto, sempre estático
         ]);
 
-        return redirect()->route('qrcodes.show', $qrCode)
-            ->with('success', 'QR Code criado com sucesso!');
+        \Log::info('QR Code created successfully', [
+            'qr_code_id' => $qrCode->id,
+            'qr_code_name' => $qrCode->name,
+            'user_id' => $user->id,
+            'short_code' => $shortCode,
+            'file_path' => $filePath
+        ]);
+
+            return redirect()->route('qrcodes.show', $qrCode)
+                ->with('success', 'QR Code criado com sucesso!');
+                
+        } catch (\Exception $e) {
+            \Log::error('QR Code creation failed', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'user_id' => auth()->id(),
+                'request_data' => $request->all()
+            ]);
+            
+            return redirect()->back()
+                ->withInput()
+                ->withErrors(['error' => 'Erro ao criar QR Code: ' . $e->getMessage()]);
+        }
     }
 
     public function show(QrCode $qrCode)
