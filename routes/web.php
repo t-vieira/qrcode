@@ -18,6 +18,16 @@ Route::get('/test-route', function () {
     return 'Test route is working!';
 });
 
+// Rota de teste autenticada
+Route::get('/test-auth', function () {
+    return 'Auth test: ' . (auth()->check() ? 'User logged in: ' . auth()->user()->name : 'Not logged in');
+})->middleware('auth');
+
+// Rota de teste dashboard simples
+Route::get('/test-dashboard', function () {
+    return 'Dashboard test: ' . (auth()->check() ? 'User logged in: ' . auth()->user()->name : 'Not logged in');
+})->middleware('auth');
+
 // Páginas públicas de ajuda
 Route::get('/help/terms', function () {
     return view('help.terms');
