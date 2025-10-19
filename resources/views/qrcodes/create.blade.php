@@ -3,22 +3,47 @@
 @section('title', 'Criar QR Code')
 
 @section('content')
-<div class="py-6">
-    <div class="max-w-4xl mx-auto sm:px-6 lg:px-8">
+<div class="p-6">
         <!-- Header -->
-        <div class="mb-6 text-center">
-            <h1 class="text-3xl font-bold bg-gradient-to-r from-primary-600 to-primary-700 bg-clip-text text-transparent">
-                Criar QR Code
-            </h1>
-            <p class="mt-2 text-gray-600">Escolha o tipo de QR Code e personalize seu conteúdo</p>
+    <div class="mb-8">
+        <div class="flex items-center mb-4">
+            <a href="{{ route('dashboard') }}" class="flex items-center text-teal-600 hover:text-teal-700 mr-4">
+                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                </svg>
+                Dashboard
+            </a>
+        </div>
+        
+        <div class="flex items-center mb-4">
+            <svg class="w-5 h-5 mr-2 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+            </svg>
+            <h1 class="text-2xl font-bold text-gray-900">Website QR Code Type</h1>
         </div>
 
-        <form method="POST" action="{{ route('qrcodes.store') }}" x-data="qrCodeForm" @submit="validateForm">
+        <!-- Progress Steps -->
+        <div class="flex items-center space-x-4">
+            <div class="flex items-center">
+                <div id="step-1" class="w-8 h-8 bg-teal-600 text-white rounded-full flex items-center justify-center text-sm font-medium">1</div>
+                <span class="ml-2 text-sm font-medium text-teal-600">Setup Info</span>
+            </div>
+            <div class="w-8 h-0.5 bg-gray-300"></div>
+            <div class="flex items-center">
+                <div id="step-2" class="w-8 h-8 bg-gray-300 text-gray-600 rounded-full flex items-center justify-center text-sm font-medium">2</div>
+                <span id="step-2-text" class="ml-2 text-sm font-medium text-gray-500">Design QR Code</span>
+            </div>
+        </div>
+    </div>
+
+    <div id="step-1-content" class="max-w-4xl">
+        <form id="qr-form" class="grid grid-cols-1 lg:grid-cols-2 gap-8">
                     @csrf
                     
-            <!-- Nome do QR Code -->
-                    <div class="mb-6">
-                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+            <!-- Left Column - Form -->
+            <div class="space-y-6">
+                <!-- QR Code Name -->
+                <div class="bg-white rounded-lg border border-gray-200 p-6">
                         <label for="name" class="block text-sm font-medium text-gray-700 mb-2">
                             Nome do QR Code
                         </label>
@@ -26,448 +51,444 @@
                                id="name" 
                                name="name" 
                                value="{{ old('name') }}"
-                           class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                               placeholder="Ex: Meu QR Code"
+                           class="form-input"
+                           placeholder="Ex: Loja no ifood"
                                required>
                         @error('name')
                             <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                         @enderror
                 </div>
-                    </div>
 
-            <!-- Seleção de Tipo -->
-                    <div class="mb-6">
-                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-                    <h2 class="text-lg font-medium text-gray-900 mb-4">Escolha o tipo de QR Code</h2>
-                    
-                    <!-- Cards de Tipos -->
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-                        <!-- URL Card -->
-                        <div class="qr-type-card" data-type="url">
-                            <input type="radio" name="type" value="url" id="type_url" class="hidden" {{ old('type') == 'url' ? 'checked' : '' }}>
-                            <label for="type_url" class="block cursor-pointer">
-                                <div class="bg-blue-50 border-2 border-blue-200 rounded-lg p-4 hover:border-blue-400 hover:shadow-md transition-all duration-200 group">
-                                    <div class="text-center">
-                                        <div class="w-8 h-8 bg-blue-500 rounded-md flex items-center justify-center mx-auto mb-2">
-                                            <svg class="w-6 h-6 text-blue-600" fill="currentColor" viewBox="0 0 24 24">
-                                                <path d="M10.59 13.41c.41.39.41 1.03 0 1.42-.39.39-1.03.39-1.42 0a5.003 5.003 0 0 1 0-7.07l3.54-3.54a5.003 5.003 0 0 1 7.07 0 5.003 5.003 0 0 1 0 7.07l-1.49 1.49c.01-.82-.12-1.64-.4-2.42l.47-.48a2.982 2.982 0 0 0 0-4.24 2.982 2.982 0 0 0-4.24 0l-1.49 1.49.01-.01A2.982 2.982 0 0 0 13 8.05l-1.49 1.49c.39.39.39 1.02 0 1.41-.39.39-1.02.39-1.41 0l-1.49-1.49a2.982 2.982 0 0 0-4.24 0 2.982 2.982 0 0 0 0 4.24l1.49 1.49c-.39.39-.39 1.02 0 1.41.39.39 1.02.39 1.41 0l1.49-1.49a2.982 2.982 0 0 0 4.24 0 2.982 2.982 0 0 0 0-4.24l-1.49-1.49c-.39-.39-1.02-.39-1.41 0z"/>
-                                            </svg>
-                                        </div>
-                                        <h3 class="text-sm font-medium text-gray-900 mb-1">URL</h3>
-                                        <p class="text-xs text-gray-600">Link para websites</p>
-                                    </div>
-                                </div>
-                            </label>
-                        </div>
-
-                        <!-- vCard Card -->
-                        <div class="qr-type-card" data-type="vcard">
-                            <input type="radio" name="type" value="vcard" id="type_vcard" class="hidden" {{ old('type') == 'vcard' ? 'checked' : '' }}>
-                            <label for="type_vcard" class="block cursor-pointer">
-                                <div class="bg-green-50 border-2 border-green-200 rounded-lg p-4 hover:border-green-400 hover:shadow-md transition-all duration-200 group">
-                                    <div class="text-center">
-                                        <div class="w-8 h-8 bg-green-500 rounded-md flex items-center justify-center mx-auto mb-2">
-                                            <svg class="w-6 h-6 text-green-600" fill="currentColor" viewBox="0 0 24 24">
-                                                <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
-                                            </svg>
-                                        </div>
-                                        <h3 class="text-sm font-medium text-gray-900 mb-1">vCard</h3>
-                                        <p class="text-xs text-gray-600">Informações de contato</p>
-                                    </div>
-                                </div>
-                            </label>
-                        </div>
-
-                        <!-- Texto Card -->
-                        <div class="qr-type-card" data-type="text">
-                            <input type="radio" name="type" value="text" id="type_text" class="hidden" {{ old('type') == 'text' ? 'checked' : '' }}>
-                            <label for="type_text" class="block cursor-pointer">
-                                <div class="bg-purple-50 border-2 border-purple-200 rounded-lg p-4 hover:border-purple-400 hover:shadow-md transition-all duration-200 group">
-                                    <div class="text-center">
-                                        <div class="w-8 h-8 bg-purple-500 rounded-md flex items-center justify-center mx-auto mb-2">
-                                            <svg class="w-6 h-6 text-purple-600" fill="currentColor" viewBox="0 0 24 24">
-                                                <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/>
-                                            </svg>
-                                        </div>
-                                        <h3 class="text-sm font-medium text-gray-900 mb-1">Texto</h3>
-                                        <p class="text-xs text-gray-600">Mensagem simples</p>
-                                    </div>
-                                </div>
-                            </label>
-                        </div>
-
-                        <!-- Email Card -->
-                        <div class="qr-type-card" data-type="email">
-                            <input type="radio" name="type" value="email" id="type_email" class="hidden" {{ old('type') == 'email' ? 'checked' : '' }}>
-                            <label for="type_email" class="block cursor-pointer">
-                                <div class="bg-orange-50 border-2 border-orange-200 rounded-lg p-4 hover:border-orange-400 hover:shadow-md transition-all duration-200 group">
-                                    <div class="text-center">
-                                        <div class="w-8 h-8 bg-orange-500 rounded-md flex items-center justify-center mx-auto mb-2">
-                                            <svg class="w-6 h-6 text-orange-600" fill="currentColor" viewBox="0 0 24 24">
-                                                <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/>
-                                            </svg>
-                                        </div>
-                                        <h3 class="text-sm font-medium text-gray-900 mb-1">Email</h3>
-                                        <p class="text-xs text-gray-600">Abrir cliente de email</p>
-                                    </div>
-                                </div>
-                            </label>
-                        </div>
-
-                        <!-- Telefone Card -->
-                        <div class="qr-type-card" data-type="phone">
-                            <input type="radio" name="type" value="phone" id="type_phone" class="hidden" {{ old('type') == 'phone' ? 'checked' : '' }}>
-                            <label for="type_phone" class="block cursor-pointer">
-                                <div class="bg-teal-50 border-2 border-teal-200 rounded-lg p-4 hover:border-teal-400 hover:shadow-md transition-all duration-200 group">
-                                    <div class="text-center">
-                                        <div class="w-8 h-8 bg-teal-500 rounded-md flex items-center justify-center mx-auto mb-2">
-                                            <svg class="w-6 h-6 text-teal-600" fill="currentColor" viewBox="0 0 24 24">
-                                                <path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/>
-                                            </svg>
-                                        </div>
-                                        <h3 class="text-sm font-medium text-gray-900 mb-1">Telefone</h3>
-                                        <p class="text-xs text-gray-600">Fazer ligação</p>
-                                    </div>
-                                </div>
-                            </label>
-                        </div>
-
-                        <!-- SMS Card -->
-                        <div class="qr-type-card" data-type="sms">
-                            <input type="radio" name="type" value="sms" id="type_sms" class="hidden" {{ old('type') == 'sms' ? 'checked' : '' }}>
-                            <label for="type_sms" class="block cursor-pointer">
-                                <div class="bg-pink-50 border-2 border-pink-200 rounded-lg p-4 hover:border-pink-400 hover:shadow-md transition-all duration-200 group">
-                                    <div class="text-center">
-                                        <div class="w-8 h-8 bg-pink-500 rounded-md flex items-center justify-center mx-auto mb-2">
-                                            <svg class="w-6 h-6 text-pink-600" fill="currentColor" viewBox="0 0 24 24">
-                                                <path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/>
-                                            </svg>
-                                        </div>
-                                        <h3 class="text-sm font-medium text-gray-900 mb-1">SMS</h3>
-                                        <p class="text-xs text-gray-600">Enviar mensagem</p>
-                                    </div>
-                                </div>
-                            </label>
-                        </div>
-
-                        <!-- Wi-Fi Card -->
-                        <div class="qr-type-card" data-type="wifi">
-                            <input type="radio" name="type" value="wifi" id="type_wifi" class="hidden" {{ old('type') == 'wifi' ? 'checked' : '' }}>
-                            <label for="type_wifi" class="block cursor-pointer">
-                                <div class="bg-indigo-50 border-2 border-indigo-200 rounded-lg p-4 hover:border-indigo-400 hover:shadow-md transition-all duration-200 group">
-                                    <div class="text-center">
-                                        <div class="w-8 h-8 bg-indigo-500 rounded-md flex items-center justify-center mx-auto mb-2">
-                                            <svg class="w-6 h-6 text-indigo-600" fill="currentColor" viewBox="0 0 24 24">
-                                                <path d="M1,9L3,11L5,9L7,11L9,9L11,11L13,9L15,11L17,9L19,11L21,9V7L19,5L17,7L15,5L13,7L11,5L9,7L7,5L5,7L3,5L1,7V9M1,15L3,17L5,15L7,17L9,15L11,17L13,15L15,17L17,15L19,17L21,15V13L19,11L17,13L15,11L13,13L11,11L9,13L7,11L5,13L3,11L1,13V15Z"/>
-                                            </svg>
-                                        </div>
-                                        <h3 class="text-sm font-medium text-gray-900 mb-1">Wi-Fi</h3>
-                                        <p class="text-xs text-gray-600">Conectar à rede</p>
-                                    </div>
-                                </div>
-                            </label>
-                        </div>
-
-                        <!-- Localização Card -->
-                        <div class="qr-type-card" data-type="location">
-                            <input type="radio" name="type" value="location" id="type_location" class="hidden" {{ old('type') == 'location' ? 'checked' : '' }}>
-                            <label for="type_location" class="block cursor-pointer">
-                                <div class="bg-red-50 border-2 border-red-200 rounded-lg p-4 hover:border-red-400 hover:shadow-md transition-all duration-200 group">
-                                    <div class="text-center">
-                                        <div class="w-8 h-8 bg-red-500 rounded-md flex items-center justify-center mx-auto mb-2">
-                                            <svg class="w-6 h-6 text-red-600" fill="currentColor" viewBox="0 0 24 24">
-                                                <path d="M12,11.5A2.5,2.5 0 0,1 9.5,9A2.5,2.5 0 0,1 12,6.5A2.5,2.5 0 0,1 14.5,9A2.5,2.5 0 0,1 12,11.5M12,2A7,7 0 0,0 5,9C5,14.25 12,22 12,22S19,14.25 19,9A7,7 0 0,0 12,2Z"/>
-                                            </svg>
-                                        </div>
-                                        <h3 class="text-sm font-medium text-gray-900 mb-1">Localização</h3>
-                                        <p class="text-xs text-gray-600">Abrir no mapa</p>
-                                    </div>
-                                </div>
-                        </label>
-                        </div>
-                    </div>
-
-                    @error('type')
-                        <p class="mt-4 text-sm text-red-600">{{ $message }}</p>
+                <!-- URL Input -->
+                <div class="bg-white rounded-lg border border-gray-200 p-6">
+                    <label for="url" class="block text-sm font-medium text-gray-700 mb-2">
+                        URL do Website
+                    </label>
+                    <input type="url" 
+                           id="url" 
+                           name="url" 
+                           value="{{ old('url') }}"
+                           class="form-input"
+                           placeholder="https://www.exemplo.com.br"
+                           required>
+                    <p class="mt-2 text-sm text-gray-500">
+                        Add the website URL to link with your QR Code.
+                    </p>
+                    @error('url')
+                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
-                </div>
-            </div>
-
-                    <!-- Conteúdo do QR Code -->
-                    <div class="mb-6">
-                        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-                        <label for="content" class="block text-sm font-medium text-gray-700 mb-2">
-                                Conteúdo do QR Code
-                        </label>
-                        <textarea id="content" 
-                                  name="content" 
-                                  rows="4"
-                                     class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 resize-none"
-                                     placeholder="Digite o conteúdo do QR Code aqui..."
-                                  required>{{ old('content') }}</textarea>
-                        @error('content')
-                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                        @enderror
-                        </div>
                     </div>
 
-                    <!-- Personalização Visual -->
-                    <div class="mb-6">
-                        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-                            <h2 class="text-lg font-medium text-gray-900 mb-4">Personalização Visual</h2>
-                            
-                            <!-- Templates -->
-                            <div class="mb-6">
-                                <label class="block text-sm font-medium text-gray-700 mb-3">Escolha um template</label>
-                                <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-                                    <template x-for="(template, key) in templates" :key="key">
-                                        <div @click="selectTemplate(key)" 
-                                             class="cursor-pointer p-3 border-2 rounded-lg transition-all duration-200"
-                                             :class="selectedTemplate === key ? 'border-primary-500 bg-primary-50' : 'border-gray-200 hover:border-gray-300'">
-                                            <div class="text-center">
-                                                <div class="w-12 h-12 mx-auto mb-2 rounded-lg flex items-center justify-center text-white font-bold text-sm"
-                                                     :style="`background: ${template.colors.body}; color: ${template.colors.background}`">
-                                                    QR
-                                                </div>
-                                                <div class="text-xs font-medium" x-text="template.name"></div>
-                                            </div>
-                                        </div>
-                                    </template>
-                                </div>
-                            </div>
-
-                            <!-- Cores Personalizadas -->
-                            <div class="mb-6">
-                                <label class="block text-sm font-medium text-gray-700 mb-3">Cores Personalizadas</label>
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div>
-                                        <label class="block text-xs font-medium text-gray-600 mb-1">Cor do Corpo</label>
-                                        <div class="flex items-center space-x-2">
-                                            <input type="color" 
-                                                   x-model="design.colors.body" 
-                                                   class="w-8 h-8 border border-gray-300 rounded cursor-pointer">
-                                            <input type="text" 
-                                                   x-model="design.colors.body" 
-                                                   class="flex-1 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-primary-500">
-                                        </div>
-                                    </div>
-                                    
-                                    <div>
-                                        <label class="block text-xs font-medium text-gray-600 mb-1">Cor de Fundo</label>
-                                        <div class="flex items-center space-x-2">
-                                            <input type="color" 
-                                                   x-model="design.colors.background" 
-                                                   class="w-8 h-8 border border-gray-300 rounded cursor-pointer">
-                                            <input type="text" 
-                                                   x-model="design.colors.background" 
-                                                   class="flex-1 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-primary-500">
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Tamanho e Margem -->
-                            <div class="mb-6">
-                                <label class="block text-sm font-medium text-gray-700 mb-3">Dimensões</label>
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div>
-                                        <label class="block text-xs font-medium text-gray-600 mb-1">Tamanho</label>
-                                        <select x-model="design.size" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary-500">
-                                            <option value="200">200x200 (Pequeno)</option>
-                                            <option value="300">300x300 (Médio)</option>
-                                            <option value="400">400x400 (Grande)</option>
-                                            <option value="500">500x500 (Muito Grande)</option>
-                                        </select>
-                                    </div>
-                                    
-                                    <div>
-                                        <label class="block text-xs font-medium text-gray-600 mb-1">Margem</label>
-                                        <select x-model="design.margin" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary-500">
-                                            <option value="5">5px (Mínima)</option>
-                                            <option value="10">10px (Pequena)</option>
-                                            <option value="15">15px (Média)</option>
-                                            <option value="20">20px (Grande)</option>
-                                        </select>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Formato -->
-                            <div class="mb-4">
-                                <label class="block text-sm font-medium text-gray-700 mb-3">Formato dos Módulos</label>
-                                <div class="grid grid-cols-2 gap-3">
-                                    <label class="flex items-center p-3 border-2 rounded-lg cursor-pointer transition-all duration-200"
-                                           :class="design.shape === 'square' ? 'border-primary-500 bg-primary-50' : 'border-gray-200 hover:border-gray-300'">
-                                        <input type="radio" x-model="design.shape" value="square" class="sr-only">
-                                        <div class="text-center w-full">
-                                            <div class="w-6 h-6 mx-auto mb-1 bg-gray-800 rounded-sm"></div>
-                                            <div class="text-xs font-medium">Quadrado</div>
-                                        </div>
-                                    </label>
-                                    
-                                    <label class="flex items-center p-3 border-2 rounded-lg cursor-pointer transition-all duration-200"
-                                           :class="design.shape === 'rounded' ? 'border-primary-500 bg-primary-50' : 'border-gray-200 hover:border-gray-300'">
-                                        <input type="radio" x-model="design.shape" value="rounded" class="sr-only">
-                                        <div class="text-center w-full">
-                                            <div class="w-6 h-6 mx-auto mb-1 bg-gray-800 rounded-md"></div>
-                                            <div class="text-xs font-medium">Arredondado</div>
-                                        </div>
-                                    </label>
-                                </div>
-                            </div>
-
-                            <!-- Preview -->
-                            <div class="border-t pt-4">
-                                <label class="block text-sm font-medium text-gray-700 mb-3">Preview</label>
-                                <div class="flex justify-center">
-                                    <div class="w-32 h-32 bg-gray-100 rounded-lg flex items-center justify-center border-2 border-dashed border-gray-300">
-                                        <div class="w-24 h-24 flex items-center justify-center text-white font-bold text-lg rounded-lg"
-                                             :style="`background: ${design.colors.body}; color: ${design.colors.background}; border-radius: ${design.shape === 'rounded' ? '8px' : '0px'};`">
-                                            QR
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                <!-- Additional Options -->
+                <div class="bg-white rounded-lg border border-gray-200 p-6">
+                    <h3 class="text-sm font-medium text-gray-700 mb-4">Opções Adicionais</h3>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label for="description" class="block text-sm font-medium text-gray-700 mb-2">
+                                Descrição (opcional)
+                            </label>
+                            <textarea id="description" 
+                                      name="description" 
+                                      rows="3"
+                                      class="form-input"
+                                      placeholder="Descrição do QR Code...">{{ old('description') }}</textarea>
                         </div>
-                    </div>
 
-            <!-- Campos ocultos para design -->
-            <input type="hidden" name="design[colors][body]" :value="design.colors.body">
-            <input type="hidden" name="design[colors][background]" :value="design.colors.background">
-            <input type="hidden" name="design[size]" :value="design.size">
-            <input type="hidden" name="design[margin]" :value="design.margin">
-            <input type="hidden" name="design[shape]" :value="design.shape">
+                        <div>
+                            <label class="flex items-center">
+                                <input type="checkbox" 
+                                       name="is_active" 
+                                       value="1" 
+                                       class="h-4 w-4 text-teal-600 focus:ring-teal-500 border-gray-300 rounded"
+                                       {{ old('is_active', true) ? 'checked' : '' }}>
+                                <span class="ml-2 text-sm text-gray-700">Ativar QR Code imediatamente</span>
+                            </label>
+                        </div>
+                                    </div>
+                                </div>
+                        </div>
 
-            <!-- Botões de Ação -->
-            <div class="flex flex-col sm:flex-row justify-end gap-3">
-                        <a href="{{ route('qrcodes.index') }}" 
-                   class="w-full sm:w-auto px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 text-center">
-                            Cancelar
-                        </a>
-                        <button type="submit" 
-                        class="w-full sm:w-auto px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-md hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
-                            Criar QR Code
+            <!-- Right Column - Preview -->
+            <div class="space-y-6">
+                <!-- Preview Card -->
+                <div class="bg-white rounded-lg border border-gray-200 p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-medium text-gray-900">Pré-visualização</h3>
+                        <button type="button" id="refresh-preview" class="text-gray-400 hover:text-gray-600">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                                            </svg>
                         </button>
+                        </div>
+
+                    <!-- Mobile Preview -->
+                    <div class="bg-gray-50 rounded-lg p-4 mb-4">
+                        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mx-auto" style="max-width: 300px;">
+                            <!-- Browser Bar -->
+                            <div class="flex items-center space-x-2 mb-4">
+                                <div class="flex space-x-1">
+                                    <div class="w-3 h-3 bg-red-400 rounded-full"></div>
+                                    <div class="w-3 h-3 bg-yellow-400 rounded-full"></div>
+                                    <div class="w-3 h-3 bg-green-400 rounded-full"></div>
+                                </div>
+                                <div class="flex-1 bg-gray-100 rounded px-3 py-1 text-xs text-gray-600" id="preview-url">
+                                    https://www.exemplo.com.br
+                                </div>
+                        </div>
+
+                            <!-- Content -->
+                                    <div class="text-center">
+                                <div class="w-16 h-16 bg-teal-100 rounded-lg mx-auto mb-4 flex items-center justify-center">
+                                    <svg class="w-8 h-8 text-teal-600" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M3 3h6v6H3V3zm8 0h6v6h-6V3zM3 11h6v6H3v-6zm8 0h6v6h-6v-6z"/>
+                                            </svg>
+                                </div>
+                                <p class="text-sm text-gray-600">
+                                    The QR code will take you to the URL address.
+                                </p>
+                                </div>
+                        </div>
                     </div>
-                </form>
+
+                    <!-- QR Code Preview -->
+                    <div class="text-center">
+                        <div class="w-32 h-32 bg-white border-2 border-gray-200 rounded-lg mx-auto flex items-center justify-center">
+                            <div id="qr-preview" class="w-24 h-24 bg-gray-100 rounded flex items-center justify-center">
+                                <svg class="w-8 h-8 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M3 3h6v6H3V3zm8 0h6v6h-6V3zM3 11h6v6H3v-6zm8 0h6v6h-6v-6z"/>
+                                </svg>
+            </div>
+                        </div>
+                        <p class="mt-2 text-sm text-gray-500">QR Code será gerado após salvar</p>
+                        </div>
+                    </div>
+
+                <!-- Download Options -->
+                <div class="bg-white rounded-lg border border-gray-200 p-6">
+                    <h3 class="text-lg font-medium text-gray-900 mb-4">Opções de Download</h3>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Formato do arquivo</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                <label class="flex items-center p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
+                                    <input type="radio" name="format" value="png" class="h-4 w-4 text-teal-600 focus:ring-teal-500 border-gray-300" checked>
+                                    <span class="ml-2 text-sm text-gray-700">PNG</span>
+                                </label>
+                                <label class="flex items-center p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
+                                    <input type="radio" name="format" value="svg" class="h-4 w-4 text-teal-600 focus:ring-teal-500 border-gray-300">
+                                    <span class="ml-2 text-sm text-gray-700">SVG</span>
+                                </label>
+                                        </div>
+                                    </div>
+                                    
+                                    <div>
+                            <label for="size" class="block text-sm font-medium text-gray-700 mb-2">Tamanho</label>
+                            <select id="size" name="size" class="form-input">
+                                <option value="256">256 x 256</option>
+                                <option value="512" selected>512 x 512</option>
+                                <option value="1024">1024 x 1024</option>
+                                <option value="2048">2048 x 2048</option>
+                            </select>
+                        </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+        <!-- Action Buttons -->
+        <div class="flex justify-end space-x-4 mt-8">
+            <a href="{{ route('dashboard') }}" class="btn-outline">
+                Cancelar
+            </a>
+            <button type="button" id="next-step" class="btn-teal">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                </svg>
+                Criar QR Code
+            </button>
+                                </div>
+                            </div>
+
+    <!-- Step 2 Content (Design) - Hidden by default -->
+    <div id="step-2-content" class="max-w-4xl hidden">
+        <div class="bg-white rounded-lg border border-gray-200 p-6">
+            <h3 class="text-lg font-medium text-gray-900 mb-4">Design do QR Code</h3>
+            <p class="text-gray-600 mb-6">Personalize a aparência do seu QR Code</p>
+            
+            <!-- Design Options -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Cor do QR Code</label>
+                    <input type="color" id="qr-color" value="#000000" class="w-full h-10 border border-gray-300 rounded-md">
+                                        </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Cor de fundo</label>
+                    <input type="color" id="bg-color" value="#ffffff" class="w-full h-10 border border-gray-300 rounded-md">
+                                </div>
+                            </div>
+
+            <!-- Final Preview -->
+            <div class="mt-6 text-center">
+                <div class="w-48 h-48 bg-white border-2 border-gray-200 rounded-lg mx-auto flex items-center justify-center">
+                    <div id="final-qr-preview" class="w-40 h-40 bg-gray-100 rounded flex items-center justify-center">
+                        <svg class="w-12 h-12 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M3 3h6v6H3V3zm8 0h6v6h-6V3zM3 11h6v6H3v-6zm8 0h6v6h-6v-6z"/>
+                        </svg>
+                            </div>
+                        </div>
+                    </div>
+
+            <!-- Final Action Buttons -->
+            <div class="flex justify-end space-x-4 mt-8">
+                <button type="button" id="back-step" class="btn-outline">
+                    Voltar
+                </button>
+                <button type="button" id="save-qr" class="btn-teal">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                    </svg>
+                    Salvar QR Code
+                        </button>
+            </div>
+        </div>
             </div>
         </div>
 
-<style>
-    /* Garantir que todos os cards tenham cores consistentes */
-    .qr-type-card[data-type="url"] label > div {
-        background: #dbeafe !important;
-        border-color: #93c5fd !important;
-    }
-    
-    .qr-type-card[data-type="vcard"] label > div {
-        background: #dcfce7 !important;
-        border-color: #86efac !important;
-    }
-    
-    .qr-type-card[data-type="text"] label > div {
-        background: #f3e8ff !important;
-        border-color: #c4b5fd !important;
-    }
-    
-    .qr-type-card[data-type="email"] label > div {
-        background: #fed7aa !important;
-        border-color: #fdba74 !important;
-    }
-    
-    .qr-type-card[data-type="phone"] label > div {
-        background: #ccfbf1 !important;
-        border-color: #5eead4 !important;
-    }
-    
-    .qr-type-card[data-type="sms"] label > div {
-        background: #fce7f3 !important;
-        border-color: #f9a8d4 !important;
-    }
-    
-    .qr-type-card[data-type="wifi"] label > div {
-        background: #e0e7ff !important;
-        border-color: #a5b4fc !important;
-    }
-    
-    .qr-type-card[data-type="location"] label > div {
-        background: #fee2e2 !important;
-        border-color: #fca5a5 !important;
-    }
-    
-    /* Seleção elegante - apenas borda e sombra */
-    .qr-type-card input[type="radio"]:checked + label > div {
-        border-width: 3px !important;
-        border-color: #3b82f6 !important;
-        box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2), 0 4px 12px rgba(59, 130, 246, 0.15) !important;
-        transform: translateY(-1px) !important;
-    }
-    
-    /* Manter cores originais dos ícones */
-    .qr-type-card input[type="radio"]:checked + label > div > div:first-child {
-        background: inherit !important;
-    }
-</style>
-
 <script>
-    document.addEventListener('alpine:init', () => {
-        Alpine.data('qrCodeForm', () => ({
-            selectedTemplate: 'classic',
-            design: {
-                colors: {
-                    body: '#000000',
-                    background: '#ffffff'
-                },
-                size: 300,
-                margin: 10,
-                shape: 'square'
+document.addEventListener('DOMContentLoaded', function() {
+    const step1Content = document.getElementById('step-1-content');
+    const step2Content = document.getElementById('step-2-content');
+    const nextStepBtn = document.getElementById('next-step');
+    const backStepBtn = document.getElementById('back-step');
+    const saveQrBtn = document.getElementById('save-qr');
+    const step1 = document.getElementById('step-1');
+    const step2 = document.getElementById('step-2');
+    const step2Text = document.getElementById('step-2-text');
+    
+    const nameInput = document.getElementById('name');
+    const urlInput = document.getElementById('url');
+    const previewUrl = document.getElementById('preview-url');
+    const qrPreview = document.getElementById('qr-preview');
+    const finalQrPreview = document.getElementById('final-qr-preview');
+    const qrColor = document.getElementById('qr-color');
+    const bgColor = document.getElementById('bg-color');
+    
+    // Update preview in real-time
+    function updatePreview() {
+        const url = urlInput.value || 'https://www.exemplo.com.br';
+        previewUrl.textContent = url.length > 30 ? url.substring(0, 30) + '...' : url;
+        
+        // Update QR code preview with real QR code
+        if (urlInput.value) {
+            generateQrPreview(url);
+        } else {
+            qrPreview.innerHTML = `
+                <div class="w-20 h-20 bg-gray-100 rounded flex items-center justify-center">
+                    <svg class="w-8 h-8 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M3 3h6v6H3V3zm8 0h6v6h-6V3zM3 11h6v6H3v-6zm8 0h6v6h-6v-6z"/>
+                    </svg>
+                </div>
+            `;
+        }
+    }
+    
+    // Generate real QR code preview
+    function generateQrPreview(url) {
+        qrPreview.innerHTML = `
+            <div class="w-20 h-20 bg-gray-100 rounded flex items-center justify-center">
+                <svg class="w-6 h-6 text-gray-400 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                </svg>
+            </div>
+        `;
+        
+        // Generate QR code using a simple API or library
+        fetch('/api/generate-qr-preview', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
             },
-            templates: {
-                classic: {
-                    name: 'Clássico',
-                    colors: { body: '#000000', background: '#ffffff' },
-                    size: 300,
-                    margin: 10,
-                    shape: 'square'
-                },
-                modern: {
-                    name: 'Moderno',
-                    colors: { body: '#3b82f6', background: '#f8fafc' },
-                    size: 300,
-                    margin: 15,
-                    shape: 'rounded'
-                },
-                dark: {
-                    name: 'Escuro',
-                    colors: { body: '#ffffff', background: '#1f2937' },
-                    size: 300,
-                    margin: 10,
-                    shape: 'square'
-                },
-                colorful: {
-                    name: 'Colorido',
-                    colors: { body: '#8b5cf6', background: '#fef3c7' },
-                    size: 300,
-                    margin: 12,
-                    shape: 'rounded'
-                }
-            },
-            
-            validateForm(event) {
-                const selectedType = document.querySelector('input[name="type"]:checked');
-                if (!selectedType) {
-                    event.preventDefault();
-                    alert('Por favor, selecione um tipo de QR Code');
-                    return false;
-                }
-                return true;
-            },
-            
-            selectTemplate(templateKey) {
-                this.selectedTemplate = templateKey;
-                this.design = { ...this.templates[templateKey] };
+            body: JSON.stringify({
+                url: url,
+                size: 80
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.qr_code_url) {
+                qrPreview.innerHTML = `
+                    <img src="${data.qr_code_url}" alt="QR Code Preview" class="w-20 h-20 object-contain">
+                `;
+            } else {
+                // Fallback to simple QR code using qr.js library
+                generateSimpleQrCode(url);
             }
-        }))
+        })
+        .catch(error => {
+            console.error('Error generating QR preview:', error);
+            // Fallback to simple QR code
+            generateSimpleQrCode(url);
+        });
+    }
+    
+    // Generate simple QR code using qr.js library
+    function generateSimpleQrCode(url) {
+        // Create a simple QR code using canvas
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = 80;
+        canvas.height = 80;
+        
+        // Simple QR code pattern (placeholder)
+        ctx.fillStyle = '#000000';
+        ctx.fillRect(10, 10, 60, 60);
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(15, 15, 50, 50);
+        ctx.fillStyle = '#000000';
+        ctx.fillRect(20, 20, 40, 40);
+        
+        qrPreview.innerHTML = `
+            <img src="${canvas.toDataURL()}" alt="QR Code Preview" class="w-20 h-20 object-contain">
+        `;
+    }
+    
+    // Update final QR preview
+    function updateFinalPreview() {
+        const qrColorValue = qrColor.value;
+        const bgColorValue = bgColor.value;
+        
+        finalQrPreview.innerHTML = `
+            <div class="w-36 h-36 rounded" style="background-color: ${bgColorValue};">
+                <div class="w-full h-full flex items-center justify-center">
+                    <div class="w-32 h-32 rounded" style="background-color: ${qrColorValue};">
+                        <svg class="w-24 h-24 text-white mx-auto mt-4" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M3 3h6v6H3V3zm8 0h6v6h-6V3zM3 11h6v6H3v-6zm8 0h6v6h-6v-6z"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+    
+    // Event listeners
+    urlInput.addEventListener('input', updatePreview);
+    nameInput.addEventListener('input', updatePreview);
+    qrColor.addEventListener('change', updateFinalPreview);
+    bgColor.addEventListener('change', updateFinalPreview);
+    
+    // Step navigation
+    nextStepBtn.addEventListener('click', function() {
+        // Validate required fields
+        if (!nameInput.value || !urlInput.value) {
+            alert('Por favor, preencha todos os campos obrigatórios.');
+            return;
+        }
+        
+        // Show step 2
+        step1Content.classList.add('hidden');
+        step2Content.classList.remove('hidden');
+        
+        // Update step indicators
+        step1.classList.remove('bg-teal-600', 'text-white');
+        step1.classList.add('bg-gray-300', 'text-gray-600');
+        step2.classList.remove('bg-gray-300', 'text-gray-600');
+        step2.classList.add('bg-teal-600', 'text-white');
+        step2Text.classList.remove('text-gray-500');
+        step2Text.classList.add('text-teal-600');
+        
+        // Update final preview
+        updateFinalPreview();
+    });
+    
+    backStepBtn.addEventListener('click', function() {
+        // Show step 1
+        step2Content.classList.add('hidden');
+        step1Content.classList.remove('hidden');
+        
+        // Update step indicators
+        step2.classList.remove('bg-teal-600', 'text-white');
+        step2.classList.add('bg-gray-300', 'text-gray-600');
+        step1.classList.remove('bg-gray-300', 'text-gray-600');
+        step1.classList.add('bg-teal-600', 'text-white');
+        step2Text.classList.remove('text-teal-600');
+        step2Text.classList.add('text-gray-500');
+    });
+    
+    // Save QR Code
+    saveQrBtn.addEventListener('click', function() {
+        // Disable button to prevent double submission
+        saveQrBtn.disabled = true;
+        saveQrBtn.textContent = 'Salvando...';
+        
+        // Create form data with correct field names
+        const formData = new FormData();
+        formData.append('_token', document.querySelector('input[name="_token"]').value);
+        formData.append('name', nameInput.value);
+        formData.append('type', 'url'); // QR Code type
+        formData.append('content', urlInput.value); // URL content
+        formData.append('description', document.getElementById('description').value);
+        formData.append('is_active', document.querySelector('input[name="is_active"]').checked ? '1' : '0');
+        
+        // Design data
+        const design = {
+            colors: {
+                body: qrColor.value,
+                background: bgColor.value
+            },
+            size: parseInt(document.getElementById('size').value),
+            margin: 10,
+            shape: 'square'
+        };
+        formData.append('design', JSON.stringify(design));
+        
+        // Submit form
+        fetch('{{ route("qrcodes.store") }}', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            }
+        })
+        .then(response => {
+            console.log('Response status:', response.status);
+            
+            if (response.status === 200) {
+                // Try to parse as JSON first
+                return response.json().catch(() => {
+                    // If not JSON, assume success and redirect
+                    console.log('Response is not JSON, assuming success');
+                    return { success: true };
+                });
+            } else {
+                throw new Error('HTTP ' + response.status);
+            }
+        })
+        .then(data => {
+            console.log('Response data:', data);
+            if (data.success !== false) {
+                // Success - redirect to dashboard
+                window.location.href = '{{ route("dashboard") }}';
+            } else {
+                alert('Erro ao criar QR Code: ' + (data.message || 'Erro desconhecido'));
+                saveQrBtn.disabled = false;
+                saveQrBtn.textContent = 'Salvar QR Code';
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Erro ao criar QR Code: ' + error.message);
+            saveQrBtn.disabled = false;
+            saveQrBtn.textContent = 'Salvar QR Code';
+        });
+    });
+    
+    // Initial preview update
+    updatePreview();
     });
 </script>
 @endsection

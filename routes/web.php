@@ -94,6 +94,12 @@ Route::middleware(['auth'])->group(function () {
         ->name('qrcodes.scans');
     Route::post('/qrcodes/preview', [QrCodeController::class, 'preview'])
         ->name('qrcodes.preview');
+    Route::post('/qrcodes/{qrcode}/toggle-status', [QrCodeController::class, 'toggleStatus'])
+        ->name('qrcodes.toggle-status');
+    Route::post('/qrcodes/{qrcode}/duplicate', [QrCodeController::class, 'duplicate'])
+        ->name('qrcodes.duplicate');
+    Route::get('/qrcodes/{qrcode}/preview', [QrCodeController::class, 'previewQrCode'])
+        ->name('qrcodes.preview-modal');
     
     // Assinaturas
     Route::get('/subscription/upgrade', [SubscriptionController::class, 'upgrade'])->name('subscription.upgrade');
@@ -135,13 +141,19 @@ Route::middleware(['auth'])->group(function () {
     // Route::get('/support/status', [SupportController::class, 'status'])->name('support.status');
     // Route::post('/support/test-message', [SupportController::class, 'testMessage'])->name('support.test-message');
     
-    // Ajuda e Documentação (comentado até implementar controller)
-    // Route::get('/help', [HelpController::class, 'index'])->name('help.index');
-    // Route::get('/help/faq', [HelpController::class, 'faq'])->name('help.faq');
-    // Route::get('/help/tutorials', [HelpController::class, 'tutorials'])->name('help.tutorials');
-    // Route::get('/help/privacy', [HelpController::class, 'privacy'])->name('help.privacy');
-    // Route::get('/help/terms', [HelpController::class, 'terms'])->name('help.terms');
-    // Route::get('/help/contact', [HelpController::class, 'contact'])->name('help.contact');
+    // Ajuda e Documentação
+    Route::get('/help', function () {
+        return view('help.index');
+    })->name('help.index');
+    Route::get('/help/faq', function () {
+        return view('help.faq');
+    })->name('help.faq');
+    Route::get('/help/tutorials', function () {
+        return view('help.tutorials');
+    })->name('help.tutorials');
+    Route::get('/help/contact', function () {
+        return view('help.contact');
+    })->name('help.contact');
     
     // LGPD - Privacidade de Dados (comentado até implementar controller)
     // Route::get('/privacy', [DataPrivacyController::class, 'index'])->name('privacy.index');
@@ -187,6 +199,16 @@ Route::middleware(['admin'])->prefix('admin')->name('admin.')->group(function ()
 Route::middleware(['auth', 'verified', 'subscription'])->group(function () {
     // Funcionalidades avançadas aqui
 });
+
+// API route to check GD extension
+Route::get('/api/check-gd-extension', function() {
+    return response()->json([
+        'gd_available' => extension_loaded('gd')
+    ]);
+});
+
+// API route to generate QR code preview
+Route::post('/api/generate-qr-preview', [QrCodeController::class, 'generatePreview']);
 
 // Redirecionamento de QR Codes (DEVE vir por último para não interceptar outras rotas)
 Route::get('/r/{shortCode}', [RedirectController::class, 'redirect'])

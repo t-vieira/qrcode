@@ -19,6 +19,10 @@
     @apply btn bg-primary-600 text-white hover:bg-primary-700 focus:ring-primary-500;
   }
   
+  .btn-teal {
+    @apply btn bg-teal-600 text-white hover:bg-teal-700 focus:ring-teal-500;
+  }
+  
   .btn-secondary {
     @apply btn bg-secondary-600 text-white hover:bg-secondary-700 focus:ring-secondary-500;
   }
@@ -31,6 +35,10 @@
     @apply bg-white overflow-hidden shadow rounded-lg;
   }
   
+  .card-hover {
+    @apply card hover:shadow-md transition-shadow duration-200;
+  }
+  
   .form-input {
     @apply block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm;
   }
@@ -39,10 +47,48 @@
     @apply block text-sm font-medium text-gray-700 mb-1;
   }
 
+  .stats-card {
+    @apply bg-white rounded-lg shadow-sm border border-gray-200 p-6;
+  }
+
+  .qr-code-card {
+    @apply bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow-md transition-shadow duration-200;
+  }
+
+  .status-active {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800;
+  }
+
+  .status-paused {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800;
+  }
+
+  .status-inactive {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800;
+  }
+
   /* Mobile menu improvements */
   @media (max-width: 1023px) {
     .mobile-menu-overlay {
       backdrop-filter: blur(4px);
     }
+  }
+
+  /* Custom scrollbar */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: #f1f5f9;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 3px;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
   }
 }

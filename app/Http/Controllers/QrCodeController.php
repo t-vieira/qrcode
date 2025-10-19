@@ -19,8 +19,31 @@ class QrCodeController extends Controller
     {
         $user = $request->user();
         
+        // Query base
+        $query = $user->qrCodes();
+        
+        // Filtro por status
+        if ($request->has('status') && $request->status !== 'all') {
+            $query->where('status', $request->status);
+        }
+        
+        // Filtro por tipo
+        if ($request->has('type') && $request->type !== 'all') {
+            $query->where('type', $request->type);
+        }
+        
+        // Busca por nome
+        if ($request->has('search') && !empty($request->search)) {
+            $query->where('name', 'like', '%' . $request->search . '%');
+        }
+        
+        // Ordenação
+        $orderBy = $request->get('order', 'created_at');
+        $orderDirection = $request->get('direction', 'desc');
+        $query->orderBy($orderBy, $orderDirection);
+        
         // Buscar QR Codes do usuário
-        $qrCodes = $user->qrCodes()->orderBy('created_at', 'desc')->paginate(20);
+        $qrCodes = $query->paginate(20);
         
         // Estatísticas básicas
         $stats = [
@@ -68,13 +91,7 @@ class QrCodeController extends Controller
                 'name' => 'required|string|max:255',
                 'type' => 'required|string|in:url,vcard,text,email,phone,sms,wifi,location',
                 'content' => 'required|string',
-                'design' => 'nullable|array',
-                'design.colors' => 'nullable|array',
-                'design.colors.body' => 'nullable|string|regex:/^#[0-9A-Fa-f]{6}$/',
-                'design.colors.background' => 'nullable|string|regex:/^#[0-9A-Fa-f]{6}$/',
-                'design.size' => 'nullable|integer|min:100|max:2000',
-                'design.margin' => 'nullable|integer|min:0|max:50',
-                'design.shape' => 'nullable|string|in:square,rounded',
+                'design' => 'nullable|string', // Aceita string JSON
             ]);
 
             $user = $request->user();
@@ -90,6 +107,12 @@ class QrCodeController extends Controller
         
         // Preparar dados de design
         $design = $request->input('design', []);
+        
+        // Se design veio como string JSON, decodificar
+        if (is_string($design)) {
+            $design = json_decode($design, true) ?: [];
+        }
+        
         if (empty($design)) {
             // Design padrão se não especificado
             $design = [
@@ -125,8 +148,18 @@ class QrCodeController extends Controller
             'file_path' => $filePath
         ]);
 
-            return redirect()->route('qrcodes.show', $qrCode)
-                ->with('success', 'QR Code criado com sucesso!');
+        // Return JSON for AJAX requests
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'QR Code criado com sucesso!',
+                'qr_code_id' => $qrCode->id,
+                'redirect_url' => route('dashboard')
+            ])->header('Content-Type', 'application/json');
+        }
+
+        return redirect()->route('qrcodes.show', $qrCode)
+            ->with('success', 'QR Code criado com sucesso!');
                 
         } catch (\Exception $e) {
             \Log::error('QR Code creation failed', [
@@ -135,6 +168,14 @@ class QrCodeController extends Controller
                 'user_id' => auth()->id(),
                 'request_data' => $request->all()
             ]);
+            
+            // Return JSON for AJAX requests
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Erro ao criar QR Code: ' . $e->getMessage()
+                ], 500)->header('Content-Type', 'application/json');
+            }
             
             return redirect()->back()
                 ->withInput()
@@ -174,6 +215,18 @@ class QrCodeController extends Controller
                 'current_user_id' => auth()->id()
             ]);
             abort(403);
+        }
+
+        // Retornar JSON para requisições AJAX
+        if (request()->ajax() || request()->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'short_code' => $qrCode->short_code,
+                'name' => $qrCode->name,
+                'type' => $qrCode->type,
+                'status' => $qrCode->status,
+                'url' => url('/r/' . $qrCode->short_code)
+            ]);
         }
 
         // Carregar estatísticas de scan
@@ -290,9 +343,173 @@ class QrCodeController extends Controller
             ->with('success', 'QR Code atualizado com sucesso!');
     }
 
-    public function destroy($qrcode)
+    public function toggleStatus(Request $request, $qrcode)
     {
-        // Buscar o QR code manualmente
+        try {
+            $qrCode = QrCode::findOrFail($qrcode);
+            
+            // Verificar se o usuário pode editar este QR Code
+            if ($qrCode->user_id !== auth()->id() && !auth()->user()->hasRole('admin')) {
+                return response()->json(['success' => false, 'message' => 'Acesso negado'], 403);
+            }
+
+            // Validar dados de entrada
+            $status = $request->input('status');
+            if (!in_array($status, ['active', 'archived'])) {
+                return response()->json(['success' => false, 'message' => 'Status inválido'], 400);
+            }
+
+            $qrCode->update(['status' => $status]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Status atualizado com sucesso!'
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Erro ao alterar status do QR Code', [
+                'qr_code_id' => $qrcode,
+                'error' => $e->getMessage(),
+                'request_data' => $request->all()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Erro ao alterar status: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function download($qrcode, $format = 'png')
+    {
+        try {
+            $qrCode = QrCode::findOrFail($qrcode);
+            
+            // Verificar se o usuário pode baixar este QR Code
+            if ($qrCode->user_id !== auth()->id() && !auth()->user()->hasRole('admin')) {
+                abort(403);
+            }
+
+            // Verificar se extensão GD está disponível para formatos de imagem
+            $hasGdExtension = extension_loaded('gd');
+            
+            // Validar formato suportado baseado nas extensões disponíveis
+            if ($hasGdExtension) {
+                $supportedFormats = ['png', 'jpg', 'jpeg', 'svg'];
+            } else {
+                $supportedFormats = ['svg'];
+                // Se não há GD, forçar SVG para formatos de imagem
+                if (in_array($format, ['png', 'jpg', 'jpeg'])) {
+                    $format = 'svg';
+                }
+            }
+            
+            if (!in_array($format, $supportedFormats)) {
+                abort(400, 'Formato não suportado. Use: ' . implode(', ', $supportedFormats));
+            }
+
+            // Normalizar formato (jpg/jpeg -> jpg)
+            if ($format === 'jpeg') {
+                $format = 'jpg';
+            }
+
+            // Gerar novo arquivo com alta resolução para download
+            $filename = $this->qrGenerator->generateUniqueFilename();
+            $shortUrl = url('/r/' . $qrCode->short_code);
+            
+            // Usar design do QR Code se disponível
+            $design = null;
+            if ($qrCode->design) {
+                if (is_string($qrCode->design)) {
+                    $design = json_decode($qrCode->design, true);
+                } elseif (is_array($qrCode->design)) {
+                    $design = $qrCode->design;
+                }
+            }
+            
+            $filePath = $this->qrGenerator->generateAndSave($shortUrl, $filename, $format, $design);
+
+            // Verificar se o arquivo foi gerado com sucesso
+            if (!\Storage::disk('public')->exists($filePath)) {
+                abort(500, 'Erro ao gerar arquivo do QR Code');
+            }
+
+            // Definir nome do arquivo para download
+            $downloadName = $qrCode->name . '_' . strtoupper($format) . '.' . $format;
+            
+            // Definir headers apropriados para o formato
+            $headers = [];
+            if ($format === 'svg') {
+                $headers['Content-Type'] = 'image/svg+xml';
+            } elseif ($format === 'jpg') {
+                $headers['Content-Type'] = 'image/jpeg';
+            } else {
+                $headers['Content-Type'] = 'image/png';
+            }
+
+            return \Storage::disk('public')->download($filePath, $downloadName, $headers);
+        } catch (\Exception $e) {
+            \Log::error('Erro ao baixar QR Code', [
+                'qr_code_id' => $qrcode,
+                'format' => $format,
+                'error' => $e->getMessage()
+            ]);
+            
+            abort(500, 'Erro ao gerar arquivo para download: ' . $e->getMessage());
+        }
+    }
+
+    public function duplicate($qrcode)
+    {
+        $originalQrCode = QrCode::findOrFail($qrcode);
+        
+        // Verificar se o usuário pode duplicar este QR Code
+        if ($originalQrCode->user_id !== auth()->id() && !auth()->user()->hasRole('admin')) {
+            return response()->json(['success' => false, 'message' => 'Acesso negado'], 403);
+        }
+
+        // Gerar novo código curto único
+        $shortCode = $this->generateUniqueShortCode();
+        
+        // Gerar nome único para o arquivo
+        $filename = $this->qrGenerator->generateUniqueFilename();
+        
+        // Gerar URL curta para redirecionamento
+        $shortUrl = url('/r/' . $shortCode);
+        
+        // Usar design do QR Code original
+        $design = $originalQrCode->design ?: [
+            'colors' => [
+                'body' => '#000000',
+                'background' => '#ffffff'
+            ],
+            'size' => 300,
+            'margin' => 10,
+            'shape' => 'square'
+        ];
+        
+        // Gerar e salvar o QR Code
+        $filePath = $this->qrGenerator->generateAndSave($shortUrl, $filename, 'svg', $design);
+        
+        $newQrCode = auth()->user()->qrCodes()->create([
+            'name' => $originalQrCode->name . ' (Cópia)',
+            'type' => $originalQrCode->type,
+            'content' => $originalQrCode->content,
+            'short_code' => $shortCode,
+            'file_path' => $filePath,
+            'design' => $design,
+            'status' => 'active',
+            'is_dynamic' => $originalQrCode->is_dynamic,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'QR Code duplicado com sucesso!',
+            'qr_code_id' => $newQrCode->id
+        ]);
+    }
+
+    public function destroy($qrcode)
+    {// Buscar o QR code manualmente
         $qrCode = QrCode::findOrFail($qrcode);
         
         if (!$qrCode) {
@@ -335,6 +552,24 @@ class QrCodeController extends Controller
             'user_id' => auth()->id()
         ]);
 
+        // Log para debug da detecção AJAX
+        \Log::info('Checking AJAX request', [
+            'is_ajax' => request()->ajax(),
+            'wants_json' => request()->wantsJson(),
+            'accept_header' => request()->header('Accept'),
+            'content_type' => request()->header('Content-Type'),
+            'method' => request()->method()
+        ]);
+
+        // Retornar JSON para requisições AJAX ou DELETE
+        if (request()->ajax() || request()->wantsJson() || request()->method() === 'DELETE') {
+            \Log::info('Returning JSON response for delete');
+            return response()->json([
+                'success' => true,
+                'message' => 'QR Code deletado com sucesso!'
+            ]);
+        }
+
         // Redirecionar baseado no tipo de usuário
         if (auth()->user()->hasRole('admin')) {
             return redirect()->route('admin.qr-codes')
@@ -343,53 +578,6 @@ class QrCodeController extends Controller
 
         return redirect()->route('qrcodes.index')
             ->with('success', 'QR Code deletado com sucesso!');
-    }
-
-    public function download($qrcode, $format = 'png')
-    {
-        $qrCode = QrCode::findOrFail($qrcode);
-        
-        // Verificar se o usuário pode baixar este QR Code
-        // Admins podem baixar qualquer QR code, usuários normais apenas os seus
-        if ($qrCode->user_id !== auth()->id() && !auth()->user()->hasRole('admin')) {
-            abort(403);
-        }
-
-        // Validar formato suportado
-        $supportedFormats = ['png', 'jpg', 'jpeg', 'svg'];
-        if (!in_array($format, $supportedFormats)) {
-            abort(400, 'Formato não suportado. Use: ' . implode(', ', $supportedFormats));
-        }
-
-        // Normalizar formato (jpg/jpeg -> jpg)
-        if ($format === 'jpeg') {
-            $format = 'jpg';
-        }
-
-        // Gerar novo arquivo com alta resolução para download
-        $filename = $this->qrGenerator->generateUniqueFilename();
-        $shortUrl = url('/r/' . $qrCode->short_code);
-        $filePath = $this->qrGenerator->generateAndSave($shortUrl, $filename, $format);
-
-        // Verificar se o arquivo foi gerado com sucesso
-        if (!\Storage::disk('public')->exists($filePath)) {
-            abort(500, 'Erro ao gerar arquivo do QR Code');
-        }
-
-        // Definir nome do arquivo para download
-        $downloadName = $qrCode->name . '_' . strtoupper($format) . '.' . $format;
-        
-        // Definir headers apropriados para o formato
-        $headers = [];
-        if ($format === 'svg') {
-            $headers['Content-Type'] = 'image/svg+xml';
-        } elseif ($format === 'jpg') {
-            $headers['Content-Type'] = 'image/jpeg';
-        } else {
-            $headers['Content-Type'] = 'image/png';
-        }
-
-        return \Storage::disk('public')->download($filePath, $downloadName, $headers);
     }
 
     public function preview(Request $request)
@@ -410,6 +598,60 @@ class QrCodeController extends Controller
             'content' => $request->content,
             'type' => $request->type
         ]);
+    }
+
+    public function previewQrCode($qrcode)
+    {
+        try {
+            \Log::info('Preview QR Code requested', ['qr_code_id' => $qrcode]);
+            
+            $qrCode = QrCode::findOrFail($qrcode);
+            \Log::info('QR Code found', ['qr_code_name' => $qrCode->name, 'file_path' => $qrCode->file_path]);
+            
+            // Verificar se o usuário pode ver este QR Code
+            if ($qrCode->user_id !== auth()->id() && !auth()->user()->hasRole('admin')) {
+                \Log::warning('Access denied for QR Code preview', ['qr_code_id' => $qrcode, 'user_id' => auth()->id()]);
+                abort(403);
+            }
+
+            // Se já existe arquivo, usar ele
+            if ($qrCode->file_path && \Storage::disk('public')->exists($qrCode->file_path)) {
+                $previewUrl = \Storage::url($qrCode->file_path);
+                \Log::info('Using existing file', ['preview_url' => $previewUrl]);
+            } else {
+                // Gerar preview temporário
+                $filename = $this->qrGenerator->generateUniqueFilename();
+                $shortUrl = url('/r/' . $qrCode->short_code);
+                
+                // Usar design do QR Code se disponível
+                $design = null;
+                if ($qrCode->design) {
+                    if (is_string($qrCode->design)) {
+                        $design = json_decode($qrCode->design, true);
+                    } elseif (is_array($qrCode->design)) {
+                        $design = $qrCode->design;
+                    }
+                }
+                
+                $filePath = $this->qrGenerator->generateAndSave($shortUrl, $filename, 'svg', $design);
+                $previewUrl = \Storage::url($filePath);
+                \Log::info('Generated new preview', ['preview_url' => $previewUrl]);
+            }
+
+            // Retornar HTML com a imagem
+            return response()->view('qrcodes.preview', [
+                'preview_url' => $previewUrl,
+                'qr_code' => $qrCode
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Erro ao gerar preview do QR Code', [
+                'qr_code_id' => $qrcode,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            abort(500, 'Erro ao gerar preview do QR Code');
+        }
     }
 
     private function generateUniqueShortCode(): string
@@ -462,5 +704,61 @@ class QrCodeController extends Controller
             'country_stats' => $countryStats,
             'last_scan' => $lastScan,
         ];
+    }
+
+    /**
+     * Generate QR code preview for creation page
+     */
+    public function generatePreview(Request $request)
+    {
+        try {
+            $request->validate([
+                'url' => 'required|url',
+                'size' => 'nullable|integer|min:50|max:500'
+            ]);
+
+            $url = $request->input('url');
+            $size = $request->input('size', 80);
+
+            // Generate unique filename for preview
+            $filename = 'preview_' . time() . '_' . Str::random(10);
+            
+            // Generate QR code
+            $filePath = $this->qrGenerator->generateAndSave($url, $filename, 'svg', [
+                'colors' => [
+                    'body' => '#000000',
+                    'background' => '#ffffff'
+                ],
+                'size' => $size,
+                'margin' => 10,
+                'shape' => 'square'
+            ]);
+
+            if ($filePath && \Storage::disk('public')->exists($filePath)) {
+                $qrCodeUrl = \Storage::url($filePath);
+                
+                return response()->json([
+                    'success' => true,
+                    'qr_code_url' => $qrCodeUrl,
+                    'message' => 'Preview gerado com sucesso!'
+                ]);
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Erro ao gerar preview do QR Code'
+                ], 500);
+            }
+        } catch (\Exception $e) {
+            \Log::error('Erro ao gerar preview do QR Code', [
+                'url' => $request->input('url'),
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Erro ao gerar preview: ' . $e->getMessage()
+            ], 500);
+        }
     }
 }
