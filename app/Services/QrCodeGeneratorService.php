@@ -7,7 +7,6 @@ use Endroid\QrCode\Writer\PngWriter;
 use Endroid\QrCode\Writer\SvgWriter;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-use Intervention\Image\Facades\Image;
 
 class QrCodeGeneratorService
 {
@@ -39,9 +38,9 @@ class QrCodeGeneratorService
             margin: 10
         );
         
-        // Verificar se GD está disponível para PNG/JPG
-        if (in_array($format, ['png', 'jpg']) && !extension_loaded('gd')) {
-            $format = 'svg'; // Fallback para SVG se GD não estiver disponível
+        // Verificar se GD está disponível para JPG
+        if (in_array($format, ['jpg', 'jpeg']) && !extension_loaded('gd')) {
+            $format = 'png'; // Fallback para PNG se GD não estiver disponível para JPG
         }
         
         // Escolher o writer baseado no formato
@@ -53,20 +52,51 @@ class QrCodeGeneratorService
         // Definir o caminho do arquivo
         $filePath = 'qrcodes/' . $filename . '.' . $format;
         
-        // Para JPG, converter PNG para JPG usando Intervention Image
+        // Para JPG, converter PNG para JPG usando GD nativo
         if (in_array($format, ['jpg', 'jpeg'])) {
-            $pngPath = 'qrcodes/' . $filename . '.png';
-            Storage::disk('public')->put($pngPath, $result->getString());
-            
-            // Converter PNG para JPG com alta qualidade
-            $image = Image::make(Storage::disk('public')->path($pngPath));
-            $image->encode('jpg', 95); // 95% de qualidade
-            
-            // Salvar como JPG
-            Storage::disk('public')->put($filePath, $image->stream());
-            
-            // Remover arquivo PNG temporário
-            Storage::disk('public')->delete($pngPath);
+            if (!extension_loaded('gd')) {
+                // Se GD não estiver disponível, salvar como PNG
+                $filePath = 'qrcodes/' . $filename . '.png';
+                Storage::disk('public')->put($filePath, $result->getString());
+            } else {
+                $pngPath = 'qrcodes/' . $filename . '.png';
+                Storage::disk('public')->put($pngPath, $result->getString());
+                
+                // Converter PNG para JPG com GD nativo
+                $pngData = Storage::disk('public')->get($pngPath);
+                $image = imagecreatefromstring($pngData);
+                
+                if ($image !== false) {
+                    // Criar fundo branco para JPG
+                    $width = imagesx($image);
+                    $height = imagesy($image);
+                    $jpgImage = imagecreatetruecolor($width, $height);
+                    $white = imagecolorallocate($jpgImage, 255, 255, 255);
+                    imagefill($jpgImage, 0, 0, $white);
+                    
+                    // Copiar PNG para JPG
+                    imagecopy($jpgImage, $image, 0, 0, 0, 0, $width, $height);
+                    
+                    // Capturar JPG em buffer
+                    ob_start();
+                    imagejpeg($jpgImage, null, 95); // 95% de qualidade
+                    $jpgData = ob_get_contents();
+                    ob_end_clean();
+                    
+                    // Salvar como JPG
+                    Storage::disk('public')->put($filePath, $jpgData);
+                    
+                    // Limpar memória
+                    imagedestroy($image);
+                    imagedestroy($jpgImage);
+                    
+                    // Remover arquivo PNG temporário
+                    Storage::disk('public')->delete($pngPath);
+                } else {
+                    // Fallback: salvar como PNG se conversão falhar
+                    Storage::disk('public')->put($filePath, $result->getString());
+                }
+            }
         } else {
             // Salvar o arquivo normalmente
             Storage::disk('public')->put($filePath, $result->getString());
@@ -86,9 +116,9 @@ class QrCodeGeneratorService
             margin: 10
         );
         
-        // Verificar se GD está disponível para PNG/JPG
-        if (in_array($format, ['png', 'jpg']) && !extension_loaded('gd')) {
-            $format = 'svg'; // Fallback para SVG se GD não estiver disponível
+        // Verificar se GD está disponível para JPG
+        if (in_array($format, ['jpg', 'jpeg']) && !extension_loaded('gd')) {
+            $format = 'png'; // Fallback para PNG se GD não estiver disponível para JPG
         }
         
         // Escolher o writer baseado no formato
@@ -97,11 +127,42 @@ class QrCodeGeneratorService
         // Gerar o resultado
         $result = $writer->write($qrCode);
         
-        // Para JPG, converter PNG para JPG
+        // Para JPG, converter PNG para JPG usando GD nativo
         if (in_array($format, ['jpg', 'jpeg'])) {
-            $image = Image::make($result->getString());
-            $image->encode('jpg', 95);
-            return 'data:image/jpeg;base64,' . base64_encode($image->stream());
+            if (!extension_loaded('gd')) {
+                // Se GD não estiver disponível, retornar PNG
+                return 'data:image/png;base64,' . base64_encode($result->getString());
+            } else {
+                $pngData = $result->getString();
+                $image = imagecreatefromstring($pngData);
+                
+                if ($image !== false) {
+                    // Criar fundo branco para JPG
+                    $width = imagesx($image);
+                    $height = imagesy($image);
+                    $jpgImage = imagecreatetruecolor($width, $height);
+                    $white = imagecolorallocate($jpgImage, 255, 255, 255);
+                    imagefill($jpgImage, 0, 0, $white);
+                    
+                    // Copiar PNG para JPG
+                    imagecopy($jpgImage, $image, 0, 0, 0, 0, $width, $height);
+                    
+                    // Capturar JPG em buffer
+                    ob_start();
+                    imagejpeg($jpgImage, null, 95); // 95% de qualidade
+                    $jpgData = ob_get_contents();
+                    ob_end_clean();
+                    
+                    // Limpar memória
+                    imagedestroy($image);
+                    imagedestroy($jpgImage);
+                    
+                    return 'data:image/jpeg;base64,' . base64_encode($jpgData);
+                } else {
+                    // Fallback: retornar PNG se conversão falhar
+                    return 'data:image/png;base64,' . base64_encode($pngData);
+                }
+            }
         }
         
         return 'data:image/' . $format . '+xml;base64,' . base64_encode($result->getString());
