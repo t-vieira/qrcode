@@ -9,11 +9,21 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\ReportsController;
 
 // Rotas públicas
 Route::get('/', function () {
     return view('welcome');
 })->name('home');
+
+// Páginas públicas
+Route::get('/pricing', function () {
+    return view('pricing');
+})->name('pricing');
+
+Route::get('/features', function () {
+    return view('features');
+})->name('features');
 
 // Rota de teste
 Route::get('/test-route', function () {
@@ -66,12 +76,21 @@ Route::middleware(['auth'])->group(function () {
     // Dashboard
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     
+    // Relatórios
+    Route::get('/reports', [ReportsController::class, 'index'])->name('reports');
+    
     
     // QR Codes
-    Route::resource('qrcodes', QrCodeController::class);
-    Route::get('/qrcodes/{qrCode}/download/{format?}', [QrCodeController::class, 'download'])
+    Route::get('/qrcodes', [QrCodeController::class, 'index'])->name('qrcodes.index');
+    Route::get('/qrcodes/create', [QrCodeController::class, 'create'])->name('qrcodes.create');
+    Route::post('/qrcodes', [QrCodeController::class, 'store'])->name('qrcodes.store');
+    Route::get('/qrcodes/{qrcode}', [QrCodeController::class, 'show'])->name('qrcodes.show');
+    Route::get('/qrcodes/{qrcode}/edit', [QrCodeController::class, 'edit'])->name('qrcodes.edit');
+    Route::put('/qrcodes/{qrcode}', [QrCodeController::class, 'update'])->name('qrcodes.update');
+    Route::delete('/qrcodes/{qrcode}', [QrCodeController::class, 'destroy'])->name('qrcodes.destroy');
+    Route::get('/qrcodes/{qrcode}/download/{format?}', [QrCodeController::class, 'download'])
         ->name('qrcodes.download');
-    Route::get('/qrcodes/{qrCode}/scans', [QrCodeController::class, 'scans'])
+    Route::get('/qrcodes/{qrcode}/scans', [QrCodeController::class, 'scans'])
         ->name('qrcodes.scans');
     Route::post('/qrcodes/preview', [QrCodeController::class, 'preview'])
         ->name('qrcodes.preview');

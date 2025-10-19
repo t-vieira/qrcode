@@ -68,6 +68,13 @@ class QrCodeController extends Controller
                 'name' => 'required|string|max:255',
                 'type' => 'required|string|in:url,vcard,text,email,phone,sms,wifi,location',
                 'content' => 'required|string',
+                'design' => 'nullable|array',
+                'design.colors' => 'nullable|array',
+                'design.colors.body' => 'nullable|string|regex:/^#[0-9A-Fa-f]{6}$/',
+                'design.colors.background' => 'nullable|string|regex:/^#[0-9A-Fa-f]{6}$/',
+                'design.size' => 'nullable|integer|min:100|max:2000',
+                'design.margin' => 'nullable|integer|min:0|max:50',
+                'design.shape' => 'nullable|string|in:square,rounded',
             ]);
 
             $user = $request->user();
@@ -81,8 +88,23 @@ class QrCodeController extends Controller
         // Gerar URL curta para redirecionamento
         $shortUrl = url('/r/' . $shortCode);
         
-        // Gerar e salvar o QR Code com a URL curta
-        $filePath = $this->qrGenerator->generateAndSave($shortUrl, $filename, 'svg');
+        // Preparar dados de design
+        $design = $request->input('design', []);
+        if (empty($design)) {
+            // Design padrão se não especificado
+            $design = [
+                'colors' => [
+                    'body' => '#000000',
+                    'background' => '#ffffff'
+                ],
+                'size' => 300,
+                'margin' => 10,
+                'shape' => 'square'
+            ];
+        }
+        
+        // Gerar e salvar o QR Code com design personalizado
+        $filePath = $this->qrGenerator->generateAndSave($shortUrl, $filename, 'svg', $design);
         
         $qrCode = $user->qrCodes()->create([
             'name' => $request->name,
@@ -90,6 +112,7 @@ class QrCodeController extends Controller
             'content' => $request->content,
             'short_code' => $shortCode,
             'file_path' => $filePath,
+            'design' => $design,
             'status' => 'active',
             'is_dynamic' => false, // Por enquanto, sempre estático
         ]);
@@ -119,13 +142,13 @@ class QrCodeController extends Controller
         }
     }
 
-    public function show($id)
+    public function show($qrcode)
     {
         // Buscar o QR code manualmente
-        $qrCode = QrCode::find($id);
+        $qrCode = QrCode::findOrFail($qrcode);
         
         if (!$qrCode) {
-            \Log::error('QR Code not found for show', ['qr_code_id' => $id]);
+            \Log::error('QR Code not found for show', ['qr_code_id' => $qrcode]);
             abort(404, 'QR Code não encontrado');
         }
         
@@ -169,10 +192,13 @@ class QrCodeController extends Controller
     /**
      * Exibir todos os scans de um QR Code
      */
-    public function scans(QrCode $qrCode, Request $request)
+    public function scans($qrcode, Request $request)
     {
+        $qrCode = QrCode::findOrFail($qrcode);
+        
         // Verificar se o usuário pode acessar este QR Code
-        if ($qrCode->user_id !== auth()->id()) {
+        // Admins podem acessar qualquer QR code, usuários normais apenas os seus
+        if ($qrCode->user_id !== auth()->id() && !auth()->user()->hasRole('admin')) {
             abort(403);
         }
 
@@ -209,18 +235,23 @@ class QrCodeController extends Controller
         return view('qrcodes.scans', compact('qrCode', 'scans', 'deviceTypes', 'countries'));
     }
 
-    public function edit(QrCode $qrCode)
+    public function edit($qrcode)
     {
+        $qrCode = QrCode::findOrFail($qrcode);
+        
         // Verificar se o usuário pode editar este QR Code
-        if ($qrCode->user_id !== auth()->id()) {
+        // Admins podem editar qualquer QR code, usuários normais apenas os seus
+        if ($qrCode->user_id !== auth()->id() && !auth()->user()->hasRole('admin')) {
             abort(403);
         }
 
         return view('qrcodes.edit', compact('qrCode'));
     }
 
-    public function update(Request $request, QrCode $qrCode)
+    public function update(Request $request, $qrcode)
     {
+        $qrCode = QrCode::findOrFail($qrcode);
+        
         // Verificar se o usuário pode editar este QR Code
         // Admins podem editar qualquer QR code, usuários normais apenas os seus
         if ($qrCode->user_id !== auth()->id() && !auth()->user()->hasRole('admin')) {
@@ -259,13 +290,13 @@ class QrCodeController extends Controller
             ->with('success', 'QR Code atualizado com sucesso!');
     }
 
-    public function destroy($id)
+    public function destroy($qrcode)
     {
         // Buscar o QR code manualmente
-        $qrCode = QrCode::find($id);
+        $qrCode = QrCode::findOrFail($qrcode);
         
         if (!$qrCode) {
-            \Log::error('QR Code not found', ['qr_code_id' => $id]);
+            \Log::error('QR Code not found', ['qr_code_id' => $qrcode]);
             abort(404, 'QR Code não encontrado');
         }
         
@@ -314,8 +345,10 @@ class QrCodeController extends Controller
             ->with('success', 'QR Code deletado com sucesso!');
     }
 
-    public function download(QrCode $qrCode, $format = 'png')
+    public function download($qrcode, $format = 'png')
     {
+        $qrCode = QrCode::findOrFail($qrcode);
+        
         // Verificar se o usuário pode baixar este QR Code
         // Admins podem baixar qualquer QR code, usuários normais apenas os seus
         if ($qrCode->user_id !== auth()->id() && !auth()->user()->hasRole('admin')) {

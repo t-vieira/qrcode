@@ -12,18 +12,26 @@ class QrCodeGeneratorService
 {
     protected PngWriter $pngWriter;
     protected SvgWriter $svgWriter;
+    protected QrCodeDesignService $designService;
 
     public function __construct()
     {
         $this->pngWriter = new PngWriter();
         $this->svgWriter = new SvgWriter();
+        $this->designService = new QrCodeDesignService();
     }
 
     /**
      * Gerar QR Code e salvar como arquivo
      */
-    public function generateAndSave(string $content, string $filename, string $format = 'svg'): string
+    public function generateAndSave(string $content, string $filename, string $format = 'svg', array $design = null): string
     {
+        // Se design personalizado foi especificado, usar o serviço de design
+        if ($design && !empty($design)) {
+            return $this->designService->saveCustomQrCode($content, $design, $filename, $format);
+        }
+        
+        // Geração básica (comportamento original)
         $qrCode = new QrCode($content);
         
         // Verificar se GD está disponível para PNG

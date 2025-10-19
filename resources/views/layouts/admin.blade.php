@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>@yield('title', 'Painel Administrativo') - {{ config('app.name', 'Laravel') }}</title>
+    <title>@yield('title', 'Painel Administrativo') - QRFlux</title>
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.bunny.net">
@@ -19,10 +19,29 @@
 </head>
 <body class="font-sans antialiased bg-gray-100">
     <div class="flex h-screen">
+        <!-- Mobile menu button -->
+        <button id="mobile-menu-button" 
+                class="lg:hidden fixed top-4 left-4 z-50 bg-gray-900 text-white p-2 rounded-md">
+            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+        </button>
+
+        <!-- Mobile overlay -->
+        <div id="mobile-overlay" 
+             class="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-40 hidden"></div>
+
         <!-- Sidebar -->
-        <div class="w-64 bg-gray-900 text-white flex flex-col">
-            <div class="flex items-center justify-center h-16 bg-gray-800">
-                <h1 class="text-xl font-bold">Admin Panel</h1>
+        <div id="sidebar" 
+             class="w-64 bg-gray-900 text-white flex flex-col fixed lg:static inset-y-0 left-0 z-50 transform -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out">
+            <div class="flex items-center justify-between h-16 bg-gray-800 px-4">
+                <h1 class="text-xl font-bold">QRFlux Admin</h1>
+                <!-- Close button for mobile -->
+                <button id="close-menu-button" class="lg:hidden text-gray-300 hover:text-white">
+                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
             </div>
             
             <nav class="flex-1 px-4 py-6 space-y-2">
@@ -72,7 +91,7 @@
         </div>
 
         <!-- Main Content -->
-        <div class="flex-1 flex flex-col overflow-hidden">
+        <div class="flex-1 flex flex-col overflow-hidden lg:ml-0">
             <!-- Top Navigation -->
             <div class="bg-white shadow-sm border-b border-gray-200">
                 <div class="flex items-center justify-between h-16 px-6">
@@ -108,5 +127,80 @@
             </div>
         </div>
     </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const mobileMenuButton = document.getElementById('mobile-menu-button');
+            const closeMenuButton = document.getElementById('close-menu-button');
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('mobile-overlay');
+            let isMenuOpen = false;
+
+            // Função para abrir o menu
+            function openMenu() {
+                sidebar.classList.remove('-translate-x-full');
+                sidebar.classList.add('translate-x-0');
+                overlay.classList.remove('hidden');
+                isMenuOpen = true;
+                console.log('Menu opened');
+            }
+
+            // Função para fechar o menu
+            function closeMenu() {
+                sidebar.classList.remove('translate-x-0');
+                sidebar.classList.add('-translate-x-full');
+                overlay.classList.add('hidden');
+                isMenuOpen = false;
+                console.log('Menu closed');
+            }
+
+            // Função para alternar o menu
+            function toggleMenu() {
+                if (isMenuOpen) {
+                    closeMenu();
+                } else {
+                    openMenu();
+                }
+            }
+
+            // Event listener para o botão do menu
+            if (mobileMenuButton) {
+                mobileMenuButton.addEventListener('click', toggleMenu);
+                console.log('Mobile menu button event listener added');
+            }
+
+            // Event listener para o botão de fechar
+            if (closeMenuButton) {
+                closeMenuButton.addEventListener('click', closeMenu);
+                console.log('Close menu button event listener added');
+            }
+
+            // Event listener para o overlay (fechar ao clicar fora)
+            if (overlay) {
+                overlay.addEventListener('click', closeMenu);
+            }
+
+            // Event listener para redimensionamento da tela
+            window.addEventListener('resize', function() {
+                if (window.innerWidth >= 1024) {
+                    // Em desktop, sempre mostrar o menu
+                    sidebar.classList.remove('-translate-x-full');
+                    sidebar.classList.add('translate-x-0');
+                    overlay.classList.add('hidden');
+                } else {
+                    // Em mobile, fechar o menu se estiver aberto
+                    if (isMenuOpen) {
+                        closeMenu();
+                    }
+                }
+            });
+
+            // Inicializar baseado no tamanho da tela
+            if (window.innerWidth >= 1024) {
+                sidebar.classList.remove('-translate-x-full');
+                sidebar.classList.add('translate-x-0');
+            }
+        });
+    </script>
 </body>
 </html>

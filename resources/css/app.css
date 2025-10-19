@@ -38,4 +38,11 @@
   .form-label {
     @apply block text-sm font-medium text-gray-700 mb-1;
   }
+
+  /* Mobile menu improvements */
+  @media (max-width: 1023px) {
+    .mobile-menu-overlay {
+      backdrop-filter: blur(4px);
+    }
+  }
 }
