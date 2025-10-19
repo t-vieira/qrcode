@@ -355,21 +355,41 @@ class QrCodeController extends Controller
             abort(403);
         }
 
-        // Se o formato solicitado for diferente do arquivo atual, gerar novo
-        if ($format !== 'svg' || !$qrCode->file_path) {
-            $filename = $this->qrGenerator->generateUniqueFilename();
-            $shortUrl = url('/r/' . $qrCode->short_code);
-            $filePath = $this->qrGenerator->generateAndSave($shortUrl, $filename, $format);
-        } else {
-            $filePath = $qrCode->file_path;
+        // Validar formato suportado
+        $supportedFormats = ['png', 'jpg', 'jpeg', 'svg'];
+        if (!in_array($format, $supportedFormats)) {
+            abort(400, 'Formato não suportado. Use: ' . implode(', ', $supportedFormats));
         }
 
-        // Verificar se o arquivo existe
+        // Normalizar formato (jpg/jpeg -> jpg)
+        if ($format === 'jpeg') {
+            $format = 'jpg';
+        }
+
+        // Gerar novo arquivo com alta resolução para download
+        $filename = $this->qrGenerator->generateUniqueFilename();
+        $shortUrl = url('/r/' . $qrCode->short_code);
+        $filePath = $this->qrGenerator->generateAndSave($shortUrl, $filename, $format);
+
+        // Verificar se o arquivo foi gerado com sucesso
         if (!\Storage::disk('public')->exists($filePath)) {
-            abort(404, 'Arquivo do QR Code não encontrado');
+            abort(500, 'Erro ao gerar arquivo do QR Code');
         }
 
-        return \Storage::disk('public')->download($filePath, $qrCode->name . '.' . $format);
+        // Definir nome do arquivo para download
+        $downloadName = $qrCode->name . '_' . strtoupper($format) . '.' . $format;
+        
+        // Definir headers apropriados para o formato
+        $headers = [];
+        if ($format === 'svg') {
+            $headers['Content-Type'] = 'image/svg+xml';
+        } elseif ($format === 'jpg') {
+            $headers['Content-Type'] = 'image/jpeg';
+        } else {
+            $headers['Content-Type'] = 'image/png';
+        }
+
+        return \Storage::disk('public')->download($filePath, $downloadName, $headers);
     }
 
     public function preview(Request $request)

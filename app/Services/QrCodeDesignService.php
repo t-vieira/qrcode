@@ -6,6 +6,7 @@ use Endroid\QrCode\QrCode;
 use Endroid\QrCode\Writer\PngWriter;
 use Endroid\QrCode\Writer\SvgWriter;
 use Endroid\QrCode\Color\Color;
+use Intervention\Image\Facades\Image;
 use Endroid\QrCode\Logo\Logo;
 use Endroid\QrCode\RoundBlockSizeMode;
 use Endroid\QrCode\Writer\Result\ResultInterface;
@@ -27,8 +28,8 @@ class QrCodeDesignService
      */
     public function generateWithDesign(string $content, array $design, string $format = 'svg'): ResultInterface
     {
-        // Configurar parâmetros
-        $size = $design['size'] ?? 300;
+        // Configurar parâmetros com alta resolução para downloads
+        $size = $design['size'] ?? 2000; // Resolução alta por padrão
         $margin = $design['margin'] ?? 10;
         
         // Configurar cores
@@ -73,7 +74,7 @@ class QrCodeDesignService
             $qrCode = $qrCode->withLogo($logo);
         }
         
-        // Escolher writer
+        // Escolher writer baseado no formato
         $writer = $format === 'svg' ? $this->svgWriter : $this->pngWriter;
         
         return $writer->write($qrCode);

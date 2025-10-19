@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\QrCode;
 use App\Models\QrScan;
+use App\Services\QrScanTracker;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Jenssegers\Agent\Agent;
@@ -198,49 +199,15 @@ class RedirectController extends Controller
     }
 
     /**
-     * Registrar scan do QR Code
+     * Registrar scan do QR Code usando QrScanTracker
      */
     protected function recordScan(QrCode $qrCode, Request $request): void
     {
         try {
-            $agent = new Agent();
-            $userAgent = $request->userAgent();
-            $ipAddress = $request->ip();
-
-            // Detectar informações do dispositivo
-            $deviceType = 'desktop';
-            if ($agent->isMobile()) {
-                $deviceType = 'mobile';
-            } elseif ($agent->isTablet()) {
-                $deviceType = 'tablet';
-            }
-
-            $platform = $agent->platform() ?: 'Unknown';
-            $browser = $agent->browser() ?: 'Unknown';
-
-            // Verificar se é um scan único (mesmo IP + dispositivo nas últimas 24h)
-            $isUnique = !QrScan::where('qr_code_id', $qrCode->id)
-                ->where('ip_address', $ipAddress)
-                ->where('device_type', $deviceType)
-                ->where('scanned_at', '>=', now()->subDay())
-                ->exists();
-
-            // Criar registro do scan
-            QrScan::create([
-                'qr_code_id' => $qrCode->id,
-                'ip_address' => $ipAddress,
-                'user_agent' => $userAgent,
-                'device_type' => $deviceType,
-                'os' => $platform,
-                'browser' => $browser,
-                'country' => null, // Pode ser implementado com API de geolocalização
-                'city' => null,
-                'latitude' => null,
-                'longitude' => null,
-                'is_unique' => $isUnique,
-                'scanned_at' => now(),
-            ]);
-
+            // Usar o QrScanTracker que tem rastreamento completo de país
+            $tracker = new QrScanTracker();
+            $tracker->track($qrCode, $request);
+            
         } catch (\Exception $e) {
             // Log do erro mas não interromper o redirecionamento
             \Log::error('Erro ao registrar scan do QR Code', [

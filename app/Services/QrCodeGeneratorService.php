@@ -7,6 +7,7 @@ use Endroid\QrCode\Writer\PngWriter;
 use Endroid\QrCode\Writer\SvgWriter;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Intervention\Image\Facades\Image;
 
 class QrCodeGeneratorService
 {
@@ -31,11 +32,14 @@ class QrCodeGeneratorService
             return $this->designService->saveCustomQrCode($content, $design, $filename, $format);
         }
         
-        // Geração básica (comportamento original)
+        // Geração básica com alta resolução para downloads
         $qrCode = new QrCode($content);
         
-        // Verificar se GD está disponível para PNG
-        if ($format === 'png' && !extension_loaded('gd')) {
+        // Configurar alta resolução para downloads
+        $qrCode = $qrCode->setSize(2000); // Resolução alta para máxima qualidade
+        
+        // Verificar se GD está disponível para PNG/JPG
+        if (in_array($format, ['png', 'jpg']) && !extension_loaded('gd')) {
             $format = 'svg'; // Fallback para SVG se GD não estiver disponível
         }
         
@@ -48,8 +52,24 @@ class QrCodeGeneratorService
         // Definir o caminho do arquivo
         $filePath = 'qrcodes/' . $filename . '.' . $format;
         
-        // Salvar o arquivo
-        Storage::disk('public')->put($filePath, $result->getString());
+        // Para JPG, converter PNG para JPG usando Intervention Image
+        if (in_array($format, ['jpg', 'jpeg'])) {
+            $pngPath = 'qrcodes/' . $filename . '.png';
+            Storage::disk('public')->put($pngPath, $result->getString());
+            
+            // Converter PNG para JPG com alta qualidade
+            $image = Image::make(Storage::disk('public')->path($pngPath));
+            $image->encode('jpg', 95); // 95% de qualidade
+            
+            // Salvar como JPG
+            Storage::disk('public')->put($filePath, $image->stream());
+            
+            // Remover arquivo PNG temporário
+            Storage::disk('public')->delete($pngPath);
+        } else {
+            // Salvar o arquivo normalmente
+            Storage::disk('public')->put($filePath, $result->getString());
+        }
         
         return $filePath;
     }
@@ -61,8 +81,11 @@ class QrCodeGeneratorService
     {
         $qrCode = new QrCode($content);
         
-        // Verificar se GD está disponível para PNG
-        if ($format === 'png' && !extension_loaded('gd')) {
+        // Configurar alta resolução para previews também
+        $qrCode = $qrCode->setSize(1000);
+        
+        // Verificar se GD está disponível para PNG/JPG
+        if (in_array($format, ['png', 'jpg']) && !extension_loaded('gd')) {
             $format = 'svg'; // Fallback para SVG se GD não estiver disponível
         }
         
@@ -71,6 +94,13 @@ class QrCodeGeneratorService
         
         // Gerar o resultado
         $result = $writer->write($qrCode);
+        
+        // Para JPG, converter PNG para JPG
+        if (in_array($format, ['jpg', 'jpeg'])) {
+            $image = Image::make($result->getString());
+            $image->encode('jpg', 95);
+            return 'data:image/jpeg;base64,' . base64_encode($image->stream());
+        }
         
         return 'data:image/' . $format . '+xml;base64,' . base64_encode($result->getString());
     }

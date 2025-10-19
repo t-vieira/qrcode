@@ -86,22 +86,42 @@ class QrScanTracker
         return Cache::remember($cacheKey, 86400, function () use ($ipAddress) {
             try {
                 // Usar ip-api.com (gratuito)
-                $response = Http::timeout(5)->get("http://ip-api.com/json/{$ipAddress}");
+                $response = Http::timeout(10)->get("http://ip-api.com/json/{$ipAddress}");
                 
                 if ($response->successful()) {
                     $data = $response->json();
                     
-                    if ($data['status'] === 'success') {
+                    if (isset($data['status']) && $data['status'] === 'success') {
+                        \Log::info('Geolocalização obtida com sucesso', [
+                            'ip' => $ipAddress,
+                            'country' => $data['countryCode'] ?? null,
+                            'city' => $data['city'] ?? null
+                        ]);
+                        
                         return [
                             'country' => $data['countryCode'] ?? null,
                             'city' => $data['city'] ?? null,
                             'latitude' => $data['lat'] ?? null,
                             'longitude' => $data['lon'] ?? null,
                         ];
+                    } else {
+                        \Log::warning('API de geolocalização retornou erro', [
+                            'ip' => $ipAddress,
+                            'response' => $data
+                        ]);
                     }
+                } else {
+                    \Log::warning('Falha na requisição de geolocalização', [
+                        'ip' => $ipAddress,
+                        'status' => $response->status()
+                    ]);
                 }
             } catch (\Exception $e) {
-                // Log do erro se necessário
+                // Log do erro para debug
+                \Log::warning('Erro ao obter geolocalização', [
+                    'ip' => $ipAddress,
+                    'error' => $e->getMessage()
+                ]);
             }
             
             return [];
