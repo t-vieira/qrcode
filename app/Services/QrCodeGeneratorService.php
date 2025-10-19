@@ -33,10 +33,11 @@ class QrCodeGeneratorService
         }
         
         // Geração básica com alta resolução para downloads
-        $qrCode = new QrCode($content);
-        
-        // Configurar alta resolução para downloads
-        $qrCode = $qrCode->setSize(2000); // Resolução alta para máxima qualidade
+        $qrCode = new QrCode(
+            data: $content,
+            size: 2000, // Resolução alta para máxima qualidade
+            margin: 10
+        );
         
         // Verificar se GD está disponível para PNG/JPG
         if (in_array($format, ['png', 'jpg']) && !extension_loaded('gd')) {
@@ -79,10 +80,11 @@ class QrCodeGeneratorService
      */
     public function generateBase64(string $content, string $format = 'svg'): string
     {
-        $qrCode = new QrCode($content);
-        
-        // Configurar alta resolução para previews também
-        $qrCode = $qrCode->setSize(1000);
+        $qrCode = new QrCode(
+            data: $content,
+            size: 1000, // Resolução para previews
+            margin: 10
+        );
         
         // Verificar se GD está disponível para PNG/JPG
         if (in_array($format, ['png', 'jpg']) && !extension_loaded('gd')) {
