@@ -34,8 +34,8 @@ class QrCodeGeneratorService
         // Geração básica com alta resolução para downloads
         $qrCode = new QrCode(
             data: $content,
-            size: 2000, // Resolução alta para máxima qualidade
-            margin: 10
+            size: 4000, // Resolução ultra alta para máxima qualidade
+            margin: 20
         );
         
         // Verificar se GD está disponível para JPG
@@ -79,7 +79,7 @@ class QrCodeGeneratorService
                     
                     // Capturar JPG em buffer
                     ob_start();
-                    imagejpeg($jpgImage, null, 95); // 95% de qualidade
+                    imagejpeg($jpgImage, null, 100); // 100% de qualidade para máxima resolução
                     $jpgData = ob_get_contents();
                     ob_end_clean();
                     
@@ -112,8 +112,8 @@ class QrCodeGeneratorService
     {
         $qrCode = new QrCode(
             data: $content,
-            size: 1000, // Resolução para previews
-            margin: 10
+            size: 2000, // Resolução alta para previews
+            margin: 20
         );
         
         // Verificar se GD está disponível para JPG
@@ -149,7 +149,7 @@ class QrCodeGeneratorService
                     
                     // Capturar JPG em buffer
                     ob_start();
-                    imagejpeg($jpgImage, null, 95); // 95% de qualidade
+                    imagejpeg($jpgImage, null, 100); // 100% de qualidade para máxima resolução
                     $jpgData = ob_get_contents();
                     ob_end_clean();
                     
@@ -174,6 +174,43 @@ class QrCodeGeneratorService
     public function generateUniqueFilename(): string
     {
         return Str::random(12) . '_' . time();
+    }
+
+    /**
+     * Gerar QR Code para download com resolução ultra alta
+     */
+    public function generateHighResolutionDownload(string $content, string $format = 'png', array $design = null): string
+    {
+        // Configurações específicas para download de alta resolução
+        $size = 5000; // Resolução ultra alta para downloads
+        $margin = 30;
+        
+        // Se design personalizado foi especificado, usar o serviço de design
+        if ($design && !empty($design)) {
+            $design['size'] = $size;
+            $design['margin'] = $margin;
+            return $this->designService->generateWithDesign($content, $design, $format)->getString();
+        }
+        
+        // Geração básica com resolução ultra alta
+        $qrCode = new QrCode(
+            data: $content,
+            size: $size,
+            margin: $margin
+        );
+        
+        // Verificar se GD está disponível para JPG
+        if (in_array($format, ['jpg', 'jpeg']) && !extension_loaded('gd')) {
+            $format = 'png'; // Fallback para PNG se GD não estiver disponível para JPG
+        }
+        
+        // Escolher o writer baseado no formato
+        $writer = $format === 'svg' ? $this->svgWriter : $this->pngWriter;
+        
+        // Gerar o resultado
+        $result = $writer->write($qrCode);
+        
+        return $result->getString();
     }
 
     /**

@@ -28,9 +28,9 @@ class QrCodeDesignService
      */
     public function generateWithDesign(string $content, array $design, string $format = 'svg'): ResultInterface
     {
-        // Configurar parâmetros com alta resolução para downloads
-        $size = $design['size'] ?? 2000; // Resolução alta por padrão
-        $margin = $design['margin'] ?? 10;
+        // Configurar parâmetros com ultra alta resolução para downloads
+        $size = $design['size'] ?? 4000; // Resolução ultra alta por padrão
+        $margin = $design['margin'] ?? 20;
         
         // Configurar cores
         $foregroundColor = new Color(0, 0, 0); // Padrão preto
@@ -207,8 +207,8 @@ class QrCodeDesignService
                     'body' => '#000000',
                     'background' => '#ffffff',
                 ],
-                'size' => 300,
-                'margin' => 10,
+                'size' => 4000,
+                'margin' => 20,
             ],
             'modern' => [
                 'name' => 'Moderno',
@@ -216,8 +216,8 @@ class QrCodeDesignService
                     'body' => '#3b82f6',
                     'background' => '#f8fafc',
                 ],
-                'size' => 300,
-                'margin' => 15,
+                'size' => 4000,
+                'margin' => 20,
                 'shape' => 'rounded',
             ],
             'dark' => [
@@ -226,8 +226,8 @@ class QrCodeDesignService
                     'body' => '#ffffff',
                     'background' => '#1f2937',
                 ],
-                'size' => 300,
-                'margin' => 10,
+                'size' => 4000,
+                'margin' => 20,
             ],
             'colorful' => [
                 'name' => 'Colorido',
@@ -235,8 +235,8 @@ class QrCodeDesignService
                     'body' => '#8b5cf6',
                     'background' => '#fef3c7',
                 ],
-                'size' => 300,
-                'margin' => 12,
+                'size' => 4000,
+                'margin' => 20,
                 'shape' => 'rounded',
             ],
             'minimal' => [
@@ -245,7 +245,7 @@ class QrCodeDesignService
                     'body' => '#6b7280',
                     'background' => '#ffffff',
                 ],
-                'size' => 250,
+                'size' => 4000,
                 'margin' => 20,
                 'shape' => 'rounded',
             ],

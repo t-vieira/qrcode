@@ -11,9 +11,9 @@ return [
     |
     */
 
-    'max_resolution' => env('QR_CODE_MAX_RESOLUTION', 1500),
+    'max_resolution' => env('QR_CODE_MAX_RESOLUTION', 5000),
     'min_resolution' => env('QR_CODE_MIN_RESOLUTION', 100),
-    'default_resolution' => env('QR_CODE_DEFAULT_RESOLUTION', 300),
+    'default_resolution' => env('QR_CODE_DEFAULT_RESOLUTION', 4000),
 
     'supported_formats' => explode(',', env('QR_CODE_SUPPORTED_FORMATS', 'png,jpg,svg,eps')),
     'default_format' => env('QR_CODE_DEFAULT_FORMAT', 'png'),
@@ -34,8 +34,8 @@ return [
     ],
 
     'optimization' => [
-        'compress_images' => env('QR_CODE_COMPRESS_IMAGES', true),
-        'quality' => env('QR_CODE_IMAGE_QUALITY', 85),
+        'compress_images' => env('QR_CODE_COMPRESS_IMAGES', false), // Desabilitar compressão para máxima qualidade
+        'quality' => env('QR_CODE_IMAGE_QUALITY', 100), // Qualidade máxima
         'progressive' => env('QR_CODE_PROGRESSIVE_JPEG', true),
     ],
 

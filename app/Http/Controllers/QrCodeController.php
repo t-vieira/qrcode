@@ -412,8 +412,7 @@ class QrCodeController extends Controller
                 $format = 'jpg';
             }
 
-            // Gerar novo arquivo com alta resolução para download
-            $filename = $this->qrGenerator->generateUniqueFilename();
+            // Gerar QR Code com resolução ultra alta para download
             $shortUrl = url('/r/' . $qrCode->short_code);
             
             // Usar design do QR Code se disponível
@@ -426,11 +425,12 @@ class QrCodeController extends Controller
                 }
             }
             
-            $filePath = $this->qrGenerator->generateAndSave($shortUrl, $filename, $format, $design);
+            // Gerar QR Code com resolução ultra alta
+            $qrCodeData = $this->qrGenerator->generateHighResolutionDownload($shortUrl, $format, $design);
 
-            // Verificar se o arquivo foi gerado com sucesso
-            if (!\Storage::disk('public')->exists($filePath)) {
-                abort(500, 'Erro ao gerar arquivo do QR Code');
+            // Verificar se os dados foram gerados com sucesso
+            if (empty($qrCodeData)) {
+                abort(500, 'Erro ao gerar dados do QR Code');
             }
 
             // Definir nome do arquivo para download
@@ -446,7 +446,9 @@ class QrCodeController extends Controller
                 $headers['Content-Type'] = 'image/png';
             }
 
-            return \Storage::disk('public')->download($filePath, $downloadName, $headers);
+            // Retornar dados diretamente com headers apropriados
+            return response($qrCodeData, 200, $headers)
+                ->header('Content-Disposition', 'attachment; filename="' . $downloadName . '"');
         } catch (\Exception $e) {
             \Log::error('Erro ao baixar QR Code', [
                 'qr_code_id' => $qrcode,
