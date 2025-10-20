@@ -139,14 +139,16 @@
             </nav>
 
             <!-- Trial Info -->
+            @if(auth()->user()->shouldShowTrialInfo())
             <div class="px-6 py-4 border-t border-gray-200">
                 <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
                     <p class="text-xs text-yellow-800">
-                        Free Trial termina em 5 Dias - 
+                        Free Trial termina em {{ auth()->user()->getTrialDaysRemaining() }} {{ auth()->user()->getTrialDaysRemaining() == 1 ? 'Dia' : 'Dias' }} - 
                         <a href="{{ route('subscription.upgrade') }}" class="text-blue-600 hover:text-blue-800 font-medium">Atualizar</a>
                     </p>
                 </div>
             </div>
+            @endif
         </div>
 
         <!-- Main Content -->

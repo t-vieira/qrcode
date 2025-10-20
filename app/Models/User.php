@@ -123,4 +123,26 @@ class User extends Authenticatable implements MustVerifyEmail
             'trial_ends_at' => now()->addDays(7),
         ]);
     }
+
+    /**
+     * Verificar se deve mostrar informações de trial
+     */
+    public function shouldShowTrialInfo(): bool
+    {
+        return $this->subscription_status === 'trialing' && 
+               $this->trial_ends_at && 
+               $this->trial_ends_at->isFuture();
+    }
+
+    /**
+     * Obter dias restantes do trial
+     */
+    public function getTrialDaysRemaining(): int
+    {
+        if (!$this->trial_ends_at) {
+            return 0;
+        }
+        
+        return max(0, $this->trial_ends_at->diffInDays(now()));
+    }
 }
