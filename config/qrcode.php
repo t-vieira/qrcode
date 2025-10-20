@@ -11,9 +11,9 @@ return [
     |
     */
 
-    'max_resolution' => env('QR_CODE_MAX_RESOLUTION', 5000),
+    'max_resolution' => env('QR_CODE_MAX_RESOLUTION', 3000),
     'min_resolution' => env('QR_CODE_MIN_RESOLUTION', 100),
-    'default_resolution' => env('QR_CODE_DEFAULT_RESOLUTION', 4000),
+    'default_resolution' => env('QR_CODE_DEFAULT_RESOLUTION', 2500),
 
     'supported_formats' => explode(',', env('QR_CODE_SUPPORTED_FORMATS', 'png,jpg,svg,eps')),
     'default_format' => env('QR_CODE_DEFAULT_FORMAT', 'png'),

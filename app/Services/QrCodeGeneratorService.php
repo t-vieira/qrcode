@@ -31,10 +31,10 @@ class QrCodeGeneratorService
             return $this->designService->saveCustomQrCode($content, $design, $filename, $format);
         }
         
-        // Geração básica com alta resolução para downloads
+        // Geração básica com resolução otimizada para downloads
         $qrCode = new QrCode(
             data: $content,
-            size: 4000, // Resolução ultra alta para máxima qualidade
+            size: $this->getOptimalResolution(), // Resolução otimizada baseada no ambiente
             margin: 20
         );
         
@@ -177,13 +177,13 @@ class QrCodeGeneratorService
     }
 
     /**
-     * Gerar QR Code para download com resolução ultra alta
+     * Gerar QR Code para download com resolução otimizada
      */
     public function generateHighResolutionDownload(string $content, string $format = 'png', array $design = null): string
     {
-        // Configurações específicas para download de alta resolução
-        $size = 5000; // Resolução ultra alta para downloads
-        $margin = 30;
+        // Detectar ambiente e ajustar resolução automaticamente
+        $size = $this->getOptimalResolution();
+        $margin = 20;
         
         // Se design personalizado foi especificado, usar o serviço de design
         if ($design && !empty($design)) {
@@ -209,8 +209,61 @@ class QrCodeGeneratorService
         
         // Gerar o resultado
         $result = $writer->write($qrCode);
+        $data = $result->getString();
         
-        return $result->getString();
+        // Limpar memória
+        unset($qrCode, $result);
+        if (function_exists('gc_collect_cycles')) {
+            gc_collect_cycles();
+        }
+        
+        return $data;
+    }
+
+    /**
+     * Obter resolução ótima baseada no ambiente e memória disponível
+     */
+    private function getOptimalResolution(): int
+    {
+        // Verificar memória disponível
+        $memoryLimit = $this->parseMemoryLimit(ini_get('memory_limit'));
+        $memoryUsage = memory_get_usage(true);
+        $availableMemory = $memoryLimit - $memoryUsage;
+        
+        // Verificar se é ambiente de produção
+        $isProduction = app()->environment('production');
+        
+        // Ajustar resolução baseada na memória disponível
+        if ($availableMemory < 50 * 1024 * 1024) { // Menos de 50MB disponível
+            return 1500; // Resolução moderada
+        } elseif ($availableMemory < 100 * 1024 * 1024) { // Menos de 100MB disponível
+            return 2000; // Resolução alta
+        } elseif ($isProduction) {
+            return 2500; // Resolução alta para produção
+        } else {
+            return 3000; // Resolução ultra alta para desenvolvimento
+        }
+    }
+    
+    /**
+     * Converter limite de memória para bytes
+     */
+    private function parseMemoryLimit(string $memoryLimit): int
+    {
+        $memoryLimit = trim($memoryLimit);
+        $last = strtolower($memoryLimit[strlen($memoryLimit) - 1]);
+        $memoryLimit = (int) $memoryLimit;
+        
+        switch ($last) {
+            case 'g':
+                $memoryLimit *= 1024;
+            case 'm':
+                $memoryLimit *= 1024;
+            case 'k':
+                $memoryLimit *= 1024;
+        }
+        
+        return $memoryLimit;
     }
 
     /**

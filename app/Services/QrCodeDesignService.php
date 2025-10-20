@@ -28,8 +28,8 @@ class QrCodeDesignService
      */
     public function generateWithDesign(string $content, array $design, string $format = 'svg'): ResultInterface
     {
-        // Configurar parâmetros com ultra alta resolução para downloads
-        $size = $design['size'] ?? 4000; // Resolução ultra alta por padrão
+        // Configurar parâmetros com resolução otimizada para downloads
+        $size = $design['size'] ?? $this->getOptimalResolution(); // Resolução otimizada por padrão
         $margin = $design['margin'] ?? 20;
         
         // Configurar cores
@@ -196,6 +196,52 @@ class QrCodeDesignService
     }
 
     /**
+     * Obter resolução ótima baseada no ambiente e memória disponível
+     */
+    private function getOptimalResolution(): int
+    {
+        // Verificar memória disponível
+        $memoryLimit = $this->parseMemoryLimit(ini_get('memory_limit'));
+        $memoryUsage = memory_get_usage(true);
+        $availableMemory = $memoryLimit - $memoryUsage;
+        
+        // Verificar se é ambiente de produção
+        $isProduction = app()->environment('production');
+        
+        // Ajustar resolução baseada na memória disponível
+        if ($availableMemory < 50 * 1024 * 1024) { // Menos de 50MB disponível
+            return 1500; // Resolução moderada
+        } elseif ($availableMemory < 100 * 1024 * 1024) { // Menos de 100MB disponível
+            return 2000; // Resolução alta
+        } elseif ($isProduction) {
+            return 2500; // Resolução alta para produção
+        } else {
+            return 3000; // Resolução ultra alta para desenvolvimento
+        }
+    }
+    
+    /**
+     * Converter limite de memória para bytes
+     */
+    private function parseMemoryLimit(string $memoryLimit): int
+    {
+        $memoryLimit = trim($memoryLimit);
+        $last = strtolower($memoryLimit[strlen($memoryLimit) - 1]);
+        $memoryLimit = (int) $memoryLimit;
+        
+        switch ($last) {
+            case 'g':
+                $memoryLimit *= 1024;
+            case 'm':
+                $memoryLimit *= 1024;
+            case 'k':
+                $memoryLimit *= 1024;
+        }
+        
+        return $memoryLimit;
+    }
+
+    /**
      * Obter templates de design pré-definidos
      */
     public function getDesignTemplates(): array
@@ -207,7 +253,7 @@ class QrCodeDesignService
                     'body' => '#000000',
                     'background' => '#ffffff',
                 ],
-                'size' => 4000,
+                'size' => null, // Usar resolução otimizada automaticamente
                 'margin' => 20,
             ],
             'modern' => [
@@ -216,7 +262,7 @@ class QrCodeDesignService
                     'body' => '#3b82f6',
                     'background' => '#f8fafc',
                 ],
-                'size' => 4000,
+                'size' => null, // Usar resolução otimizada automaticamente
                 'margin' => 20,
                 'shape' => 'rounded',
             ],
@@ -226,7 +272,7 @@ class QrCodeDesignService
                     'body' => '#ffffff',
                     'background' => '#1f2937',
                 ],
-                'size' => 4000,
+                'size' => null, // Usar resolução otimizada automaticamente
                 'margin' => 20,
             ],
             'colorful' => [
@@ -235,7 +281,7 @@ class QrCodeDesignService
                     'body' => '#8b5cf6',
                     'background' => '#fef3c7',
                 ],
-                'size' => 4000,
+                'size' => null, // Usar resolução otimizada automaticamente
                 'margin' => 20,
                 'shape' => 'rounded',
             ],
@@ -245,7 +291,7 @@ class QrCodeDesignService
                     'body' => '#6b7280',
                     'background' => '#ffffff',
                 ],
-                'size' => 4000,
+                'size' => null, // Usar resolução otimizada automaticamente
                 'margin' => 20,
                 'shape' => 'rounded',
             ],
