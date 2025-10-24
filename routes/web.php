@@ -10,6 +10,7 @@ use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\ReportsController;
+use App\Http\Controllers\FolderController;
 
 // Rotas públicas
 Route::get('/', function () {
@@ -100,6 +101,10 @@ Route::middleware(['auth'])->group(function () {
         ->name('qrcodes.duplicate');
     Route::get('/qrcodes/{qrcode}/preview', [QrCodeController::class, 'previewQrCode'])
         ->name('qrcodes.preview-modal');
+    
+    // Pastas
+    Route::resource('folders', FolderController::class);
+    Route::get('/folders-ajax', [FolderController::class, 'getFolders'])->name('folders.ajax');
     
     // Assinaturas
     Route::get('/subscription/upgrade', [SubscriptionController::class, 'upgrade'])->name('subscription.upgrade');

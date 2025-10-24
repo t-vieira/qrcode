@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\QrCode;
+use App\Models\Folder;
 use Illuminate\Http\Request;
 
 class DashboardController extends Controller
@@ -14,8 +15,16 @@ class DashboardController extends Controller
         // Estatísticas básicas
         $stats = $this->getDashboardStats($user);
         
-        // QR Codes recentes
+        // Pastas do usuário
+        $folders = $user->folders()
+            ->withCount('qrCodes')
+            ->whereNull('parent_id')
+            ->orderBy('name')
+            ->get();
+        
+        // QR Codes recentes com pasta
         $recentQrCodes = $user->qrCodes()
+            ->with('folder')
             ->orderBy('created_at', 'desc')
             ->limit(5)
             ->get();
@@ -26,7 +35,8 @@ class DashboardController extends Controller
         return view('dashboard', compact(
             'stats', 
             'recentQrCodes',
-            'scansChartData'
+            'scansChartData',
+            'folders'
         ));
     }
 

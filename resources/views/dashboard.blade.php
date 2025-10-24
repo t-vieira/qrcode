@@ -66,6 +66,49 @@
                 </div>
             </div>
 
+    <!-- Pastas -->
+    @if(isset($folders) && $folders->count() > 0)
+    <div class="mb-8">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg font-semibold text-gray-900">Suas Pastas</h2>
+            <a href="{{ route('folders.index') }}" class="text-sm text-teal-600 hover:text-teal-700 font-medium">
+                Ver todas
+            </a>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            @foreach($folders->take(3) as $folder)
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow duration-200">
+                <div class="p-4">
+                    <div class="flex items-center mb-3">
+                        <div class="w-8 h-8 bg-teal-100 rounded-lg flex items-center justify-center mr-3">
+                            <svg class="w-4 h-4 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 class="text-sm font-semibold text-gray-900">{{ $folder->name }}</h3>
+                            <p class="text-xs text-gray-500">{{ $folder->qr_codes_count }} QR {{ $folder->qr_codes_count == 1 ? 'Code' : 'Codes' }}</p>
+                        </div>
+                    </div>
+                    <a href="{{ route('folders.show', $folder) }}" 
+                       class="block w-full text-center py-2 px-3 bg-teal-600 text-white text-xs font-medium rounded-md hover:bg-teal-700 transition-colors duration-200">
+                        Ver Pasta
+                    </a>
+                </div>
+            </div>
+            @endforeach
+        </div>
+        @if($folders->count() > 3)
+        <div class="mt-4 text-center">
+            <a href="{{ route('folders.index') }}" 
+               class="text-sm text-teal-600 hover:text-teal-700 font-medium">
+                Ver mais {{ $folders->count() - 3 }} pasta{{ $folders->count() - 3 == 1 ? '' : 's' }}
+            </a>
+        </div>
+        @endif
+    </div>
+    @endif
+
     <!-- QR Codes List -->
     <div class="space-y-4">
         @if(isset($recentQrCodes) && $recentQrCodes->count() > 0)
@@ -133,12 +176,12 @@
                                     <span>{{ $qrcode->created_at->format('M d, Y') }}</span>
                                 </div>
                                 
-                                <div class="flex items-center">
-                                    <svg class="w-4 h-4 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"/>
-                                </svg>
-                                    <span>No Folder</span>
-                                            </div>
+                                        <div class="flex items-center">
+                                            <svg class="w-4 h-4 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"/>
+                                            </svg>
+                                            <span>{{ $qrcode->folder ? $qrcode->folder->name : 'Sem Pasta' }}</span>
+                                        </div>
                                     </div>
 
                             <!-- Action Icons -->

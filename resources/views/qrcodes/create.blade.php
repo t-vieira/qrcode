@@ -84,6 +84,27 @@
                     <h3 class="text-sm font-medium text-gray-700 mb-4">Opções Adicionais</h3>
                     
                     <div class="space-y-4">
+                        <!-- Folder Selection -->
+                        <div>
+                            <label for="folder_id" class="block text-sm font-medium text-gray-700 mb-2">
+                                Pasta (opcional)
+                            </label>
+                            <select id="folder_id" 
+                                    name="folder_id" 
+                                    class="form-input">
+                                <option value="">Sem pasta</option>
+                                @foreach($folders as $folder)
+                                <option value="{{ $folder->id }}" 
+                                        {{ old('folder_id', $selectedFolderId) == $folder->id ? 'selected' : '' }}>
+                                    {{ $folder->name }}
+                                </option>
+                                @endforeach
+                            </select>
+                            <p class="mt-1 text-sm text-gray-500">
+                                Organize seus QR codes em pastas
+                            </p>
+                        </div>
+
                         <div>
                             <label for="description" class="block text-sm font-medium text-gray-700 mb-2">
                                 Descrição (opcional)
@@ -430,6 +451,7 @@ document.addEventListener('DOMContentLoaded', function() {
         formData.append('name', nameInput.value);
         formData.append('type', 'url'); // QR Code type
         formData.append('content', urlInput.value); // URL content
+        formData.append('folder_id', document.getElementById('folder_id').value);
         formData.append('description', document.getElementById('description').value);
         formData.append('is_active', document.querySelector('input[name="is_active"]').checked ? '1' : '0');
         

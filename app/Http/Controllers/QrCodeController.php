@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\QrCode;
+use App\Models\Folder;
 use App\Services\QrCodeGeneratorService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -42,8 +43,8 @@ class QrCodeController extends Controller
         $orderDirection = $request->get('direction', 'desc');
         $query->orderBy($orderBy, $orderDirection);
         
-        // Buscar QR Codes do usuário
-        $qrCodes = $query->paginate(20);
+        // Buscar QR Codes do usuário com pasta
+        $qrCodes = $query->with('folder')->paginate(20);
         
         // Estatísticas básicas
         $stats = [
@@ -56,7 +57,7 @@ class QrCodeController extends Controller
         return view('qrcodes.index', compact('qrCodes', 'stats'));
     }
 
-    public function create()
+    public function create(Request $request)
     {
         \Log::info('QR Code create page accessed', [
             'user_id' => auth()->id(),
@@ -68,7 +69,16 @@ class QrCodeController extends Controller
             'ip_address' => request()->ip()
         ]);
 
-        return view('qrcodes.create');
+        // Buscar pastas do usuário
+        $folders = auth()->user()->folders()
+            ->whereNull('parent_id')
+            ->orderBy('name')
+            ->get();
+
+        // Pasta selecionada via parâmetro
+        $selectedFolderId = $request->get('folder');
+
+        return view('qrcodes.create', compact('folders', 'selectedFolderId'));
     }
 
     public function store(Request $request)
@@ -92,6 +102,7 @@ class QrCodeController extends Controller
                 'type' => 'required|string|in:url,vcard,text,email,phone,sms,wifi,location',
                 'content' => 'required|string',
                 'design' => 'nullable|string', // Aceita string JSON
+                'folder_id' => 'nullable|exists:folders,id',
             ]);
 
             $user = $request->user();
@@ -138,6 +149,7 @@ class QrCodeController extends Controller
             'design' => $design,
             'status' => 'active',
             'is_dynamic' => false, // Por enquanto, sempre estático
+            'folder_id' => $request->folder_id,
         ]);
 
         \Log::info('QR Code created successfully', [
