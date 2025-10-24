@@ -6,9 +6,12 @@ use App\Models\Folder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 
 class FolderController extends Controller
 {
+    use AuthorizesRequests;
+    
     public function __construct()
     {
         $this->middleware('auth');
