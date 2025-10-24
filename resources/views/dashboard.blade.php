@@ -115,14 +115,14 @@
                                     <svg class="w-4 h-4 mr-2 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
                         </svg>
-                                    <span class="truncate max-w-xs" title="{{ $qrcode->content['url'] }}">{{ $qrcode->content['url'] }}</span>
+                                    <span class="url-truncate" title="{{ $qrcode->content['url'] }}">{{ $qrcode->content['url'] }}</span>
                     </div>
                                 @elseif($qrcode->content && is_string($qrcode->content))
                                 <div class="flex items-center">
                                     <svg class="w-4 h-4 mr-2 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
                                     </svg>
-                                    <span class="truncate max-w-xs" title="{{ $qrcode->content }}">{{ $qrcode->content }}</span>
+                                    <span class="url-truncate" title="{{ $qrcode->content }}">{{ $qrcode->content }}</span>
             </div>
         @endif
 
