@@ -112,7 +112,7 @@
                     
                     <!-- Created Date -->
                     <div class="text-xs text-gray-500">
-                        Criado em {{ $folder->created_at->format('d/m/Y') }}
+                        Criado em {{ \App\Helpers\DateHelper::formatBrazilian($folder->created_at) }}
                     </div>
                 </div>
                 
