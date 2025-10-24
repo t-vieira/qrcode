@@ -7,9 +7,12 @@ use App\Models\Folder;
 use App\Services\QrCodeGeneratorService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 
 class QrCodeController extends Controller
 {
+    use AuthorizesRequests;
+    
     protected QrCodeGeneratorService $qrGenerator;
 
     public function __construct(QrCodeGeneratorService $qrGenerator)
@@ -723,32 +726,55 @@ class QrCodeController extends Controller
     /**
      * Move QR code to folder
      */
-    public function moveToFolder(Request $request, QrCode $qrcode)
+    public function moveToFolder(Request $request, $qrcodeId)
     {
-        $this->authorize('update', $qrcode);
-
-        $request->validate([
-            'folder_id' => 'nullable|exists:folders,id',
-        ]);
-
-        // Verificar se a pasta pertence ao usuário
-        if ($request->folder_id) {
-            $folder = auth()->user()->folders()->find($request->folder_id);
-            if (!$folder) {
+        try {
+            // Buscar o QR code
+            $qrcode = QrCode::findOrFail($qrcodeId);
+            
+            // Verificar se o QR code pertence ao usuário
+            if ($qrcode->user_id !== auth()->id()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Pasta não encontrada.'
+                    'message' => 'QR Code não encontrado.'
                 ], 404);
             }
+
+            $request->validate([
+                'folder_id' => 'nullable|exists:folders,id',
+            ]);
+
+            // Verificar se a pasta pertence ao usuário
+            if ($request->folder_id) {
+                $folder = auth()->user()->folders()->find($request->folder_id);
+                if (!$folder) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Pasta não encontrada.'
+                    ], 404);
+                }
+            }
+
+            $qrcode->update(['folder_id' => $request->folder_id]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'QR Code movido com sucesso!',
+                'folder_name' => $qrcode->fresh()->folder ? $qrcode->fresh()->folder->name : 'Sem Pasta'
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error moving QR code to folder', [
+                'error' => $e->getMessage(),
+                'qr_code_id' => $qrcodeId,
+                'user_id' => auth()->id(),
+                'request_data' => $request->all()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Erro interno do servidor.'
+            ], 500);
         }
-
-        $qrcode->update(['folder_id' => $request->folder_id]);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'QR Code movido com sucesso!',
-            'folder_name' => $qrcode->folder ? $qrcode->folder->name : 'Sem Pasta'
-        ]);
     }
 
     /**
