@@ -721,6 +721,71 @@ class QrCodeController extends Controller
     }
 
     /**
+     * Move QR code to folder
+     */
+    public function moveToFolder(Request $request, QrCode $qrcode)
+    {
+        $this->authorize('update', $qrcode);
+
+        $request->validate([
+            'folder_id' => 'nullable|exists:folders,id',
+        ]);
+
+        // Verificar se a pasta pertence ao usuário
+        if ($request->folder_id) {
+            $folder = auth()->user()->folders()->find($request->folder_id);
+            if (!$folder) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Pasta não encontrada.'
+                ], 404);
+            }
+        }
+
+        $qrcode->update(['folder_id' => $request->folder_id]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'QR Code movido com sucesso!',
+            'folder_name' => $qrcode->folder ? $qrcode->folder->name : 'Sem Pasta'
+        ]);
+    }
+
+    /**
+     * Move multiple QR codes to folder
+     */
+    public function moveMultipleToFolder(Request $request)
+    {
+        $request->validate([
+            'qr_code_ids' => 'required|array',
+            'qr_code_ids.*' => 'exists:qr_codes,id',
+            'folder_id' => 'nullable|exists:folders,id',
+        ]);
+
+        $user = auth()->user();
+        $qrCodes = $user->qrCodes()->whereIn('id', $request->qr_code_ids);
+
+        // Verificar se a pasta pertence ao usuário
+        if ($request->folder_id) {
+            $folder = $user->folders()->find($request->folder_id);
+            if (!$folder) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Pasta não encontrada.'
+                ], 404);
+            }
+        }
+
+        $updated = $qrCodes->update(['folder_id' => $request->folder_id]);
+
+        return response()->json([
+            'success' => true,
+            'message' => "{$updated} QR Code(s) movido(s) com sucesso!",
+            'moved_count' => $updated
+        ]);
+    }
+
+    /**
      * Generate QR code preview for creation page
      */
     public function generatePreview(Request $request)

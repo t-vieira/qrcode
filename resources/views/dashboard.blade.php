@@ -207,6 +207,13 @@
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"/>
                                     </svg>
                                 </button>
+                                <button onclick="moveQrCode({{ $qrcode->id }})" 
+                                        class="text-gray-400 hover:text-gray-600" 
+                                        title="Mover para Pasta">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"/>
+                                    </svg>
+                                </button>
                                 <button onclick="deleteQrCode({{ $qrcode->id }})" 
                                         class="text-gray-400 hover:text-red-600" 
                                         title="Excluir QR Code">
@@ -605,6 +612,87 @@ function deleteQrCode(qrCodeId) {
             alert('Erro ao excluir QR Code');
         });
     }
+}
+
+// Move QR Code to folder
+function moveQrCode(qrCodeId) {
+    // Create modal for folder selection
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center';
+    modal.innerHTML = `
+        <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Mover QR Code para Pasta</h3>
+            <div class="mb-4">
+                <label for="folder-select" class="block text-sm font-medium text-gray-700 mb-2">
+                    Selecione uma pasta
+                </label>
+                <select id="folder-select" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500">
+                    <option value="">Sem pasta</option>
+                </select>
+            </div>
+            <div class="flex justify-end space-x-3">
+                <button onclick="closeMoveModal()" class="px-4 py-2 text-gray-600 hover:text-gray-800">
+                    Cancelar
+                </button>
+                <button onclick="confirmMoveQrCode(${qrCodeId})" class="px-4 py-2 bg-teal-600 text-white rounded-md hover:bg-teal-700">
+                    Mover
+                </button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    // Load folders
+    fetch('/folders-ajax')
+        .then(response => response.json())
+        .then(folders => {
+            const select = document.getElementById('folder-select');
+            folders.forEach(folder => {
+                const option = document.createElement('option');
+                option.value = folder.id;
+                option.textContent = folder.name;
+                select.appendChild(option);
+            });
+        })
+        .catch(error => {
+            console.error('Error loading folders:', error);
+        });
+}
+
+function closeMoveModal() {
+    const modal = document.querySelector('.fixed.inset-0.bg-black.bg-opacity-50');
+    if (modal) {
+        modal.remove();
+    }
+}
+
+function confirmMoveQrCode(qrCodeId) {
+    const folderId = document.getElementById('folder-select').value;
+    
+    fetch(`/qrcodes/${qrCodeId}/move`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        },
+        body: JSON.stringify({
+            folder_id: folderId || null
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            location.reload();
+        } else {
+            alert('Erro: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Erro ao mover QR Code');
+    });
 }
 </script>
 @endsection

@@ -101,6 +101,10 @@ Route::middleware(['auth'])->group(function () {
         ->name('qrcodes.duplicate');
     Route::get('/qrcodes/{qrcode}/preview', [QrCodeController::class, 'previewQrCode'])
         ->name('qrcodes.preview-modal');
+    Route::post('/qrcodes/{qrcode}/move', [QrCodeController::class, 'moveToFolder'])
+        ->name('qrcodes.move');
+    Route::post('/qrcodes/move-multiple', [QrCodeController::class, 'moveMultipleToFolder'])
+        ->name('qrcodes.move-multiple');
     
     // Pastas
     Route::resource('folders', FolderController::class);
