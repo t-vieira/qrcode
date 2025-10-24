@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>@yield('title', 'Login') - QR CODE CREATOR</title>
+    <title>@yield('title', 'Login') - QRFlux</title>
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.bunny.net">
@@ -40,7 +40,7 @@
                         <path d="M3 3h6v6H3V3zm8 0h6v6h-6V3zM3 11h6v6H3v-6zm8 0h6v6h-6v-6z"/>
                     </svg>
                 </div>
-                <h1 class="text-xl font-bold text-white">QR CODE CREATOR</h1>
+                <h1 class="text-xl font-bold text-white">QRFlux</h1>
             </div>
         </div>
 
