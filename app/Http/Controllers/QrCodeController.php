@@ -329,30 +329,65 @@ class QrCodeController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'content' => 'required|string',
+            'design' => 'nullable|string', // Aceita string JSON para design
+            'design_color' => 'nullable|string|regex:/^#[0-9A-Fa-f]{6}$/',
+            'design_background' => 'nullable|string|regex:/^#[0-9A-Fa-f]{6}$/',
+            'design_size' => 'nullable|integer|min:100|max:2000',
+            'design_shape' => 'nullable|string|in:square,round',
         ]);
 
-        // Se o conteúdo mudou, regenerar o QR Code
-        if ($qrCode->content !== $request->content) {
+        // Preparar dados de design se fornecidos
+        $design = $request->input('design', []);
+        if (is_string($design)) {
+            $design = json_decode($design, true) ?: [];
+        }
+
+        // Se não veio como JSON, montar a partir dos campos individuais
+        if (empty($design) && ($request->has('design_color') || $request->has('design_background') || $request->has('design_size') || $request->has('design_shape'))) {
+            $design = [
+                'colors' => [
+                    'body' => $request->input('design_color', '#000000'),
+                    'background' => $request->input('design_background', '#ffffff')
+                ],
+                'size' => (int) $request->input('design_size', 300),
+                'shape' => $request->input('design_shape', 'square'),
+                'margin' => 10
+            ];
+        }
+
+        // Verificar se o design mudou (necessita regeneração)
+        $needsRegeneration = false;
+        if (!empty($design) && $qrCode->design !== $design) {
+            $needsRegeneration = true;
+        }
+
+        // Atualizar dados do QR Code
+        $updateData = [
+            'name' => $request->name,
+            'content' => $request->content,
+        ];
+
+        // Se design mudou, incluir na atualização
+        if ($needsRegeneration) {
+            $updateData['design'] = $design;
+        }
+
+        // Se precisa regenerar (design mudou), gerar nova imagem
+        if ($needsRegeneration) {
             // Deletar arquivo antigo
             if ($qrCode->file_path) {
                 $this->qrGenerator->deleteQrCodeFile($qrCode->file_path);
             }
             
-            // Gerar novo arquivo com URL curta
+            // Gerar novo arquivo com URL curta e novo design
             $filename = $this->qrGenerator->generateUniqueFilename();
             $shortUrl = url('/r/' . $qrCode->short_code);
-            $filePath = $this->qrGenerator->generateAndSave($shortUrl, $filename, 'svg');
+            $filePath = $this->qrGenerator->generateAndSave($shortUrl, $filename, 'svg', $design);
             
-            $qrCode->update([
-                'name' => $request->name,
-                'content' => $request->content,
-                'file_path' => $filePath,
-            ]);
-        } else {
-            $qrCode->update([
-                'name' => $request->name,
-            ]);
+            $updateData['file_path'] = $filePath;
         }
+
+        $qrCode->update($updateData);
 
         return redirect()->route('qrcodes.show', $qrCode)
             ->with('success', 'QR Code atualizado com sucesso!');
@@ -631,13 +666,24 @@ class QrCodeController extends Controller
                 abort(403);
             }
 
-            // Se já existe arquivo, usar ele
+            // Se já existe arquivo, usar ele diretamente - SEM REGENERAÇÃO
             if ($qrCode->file_path && \Storage::disk('public')->exists($qrCode->file_path)) {
-                $previewUrl = \Storage::url($qrCode->file_path);
-                \Log::info('Using existing file', ['preview_url' => $previewUrl]);
+                $previewUrl = \Storage::disk('public')->url($qrCode->file_path);
+                \Log::info('Using existing file for preview', ['preview_url' => $previewUrl]);
+                
+                // Retornar HTML com a imagem existente
+                return response()->view('qrcodes.preview', [
+                    'preview_url' => $previewUrl,
+                    'qr_code' => $qrCode
+                ]);
             } else {
-                // Gerar preview temporário
-                $filename = $this->qrGenerator->generateUniqueFilename();
+                // Se não existe arquivo, gerar um temporário apenas para preview
+                \Log::warning('QR Code file not found, generating temporary preview', [
+                    'qr_code_id' => $qrCode->id,
+                    'file_path' => $qrCode->file_path
+                ]);
+                
+                $filename = 'temp_preview_' . $qrCode->id . '_' . time();
                 $shortUrl = url('/r/' . $qrCode->short_code);
                 
                 // Usar design do QR Code se disponível
@@ -651,15 +697,15 @@ class QrCodeController extends Controller
                 }
                 
                 $filePath = $this->qrGenerator->generateAndSave($shortUrl, $filename, 'svg', $design);
-                $previewUrl = \Storage::url($filePath);
-                \Log::info('Generated new preview', ['preview_url' => $previewUrl]);
+                $previewUrl = \Storage::disk('public')->url($filePath);
+                \Log::info('Generated temporary preview', ['preview_url' => $previewUrl]);
+                
+                // Retornar HTML com a imagem temporária
+                return response()->view('qrcodes.preview', [
+                    'preview_url' => $previewUrl,
+                    'qr_code' => $qrCode
+                ]);
             }
-
-            // Retornar HTML com a imagem
-            return response()->view('qrcodes.preview', [
-                'preview_url' => $previewUrl,
-                'qr_code' => $qrCode
-            ]);
         } catch (\Exception $e) {
             \Log::error('Erro ao gerar preview do QR Code', [
                 'qr_code_id' => $qrcode,

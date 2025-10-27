@@ -64,6 +64,88 @@
                         @enderror
                     </div>
 
+                    <!-- Design (Opcional) -->
+                    <div class="mb-6">
+                        <div class="flex items-center justify-between mb-2">
+                            <label class="text-sm font-medium text-gray-700">
+                                Design Personalizado (Opcional)
+                            </label>
+                            <button type="button" 
+                                    id="toggle-design"
+                                    class="text-sm text-primary-600 hover:text-primary-500">
+                                Alterar Design
+                            </button>
+                        </div>
+                        
+                        <div id="design-section" class="hidden space-y-4 p-4 border border-gray-200 rounded-md bg-gray-50">
+                            <!-- Cor do QR Code -->
+                            <div>
+                                <label for="design_color" class="block text-sm font-medium text-gray-700 mb-1">
+                                    Cor do QR Code
+                                </label>
+                                <input type="color" 
+                                       id="design_color" 
+                                       name="design_color"
+                                       value="{{ old('design_color', $qrCode->design['colors']['body'] ?? '#000000') }}"
+                                       class="w-20 h-10 border border-gray-300 rounded cursor-pointer">
+                            </div>
+                            
+                            <!-- Cor de Fundo -->
+                            <div>
+                                <label for="design_background" class="block text-sm font-medium text-gray-700 mb-1">
+                                    Cor de Fundo
+                                </label>
+                                <input type="color" 
+                                       id="design_background" 
+                                       name="design_background"
+                                       value="{{ old('design_background', $qrCode->design['colors']['background'] ?? '#ffffff') }}"
+                                       class="w-20 h-10 border border-gray-300 rounded cursor-pointer">
+                            </div>
+                            
+                            <!-- Tamanho -->
+                            <div>
+                                <label for="design_size" class="block text-sm font-medium text-gray-700 mb-1">
+                                    Tamanho (px)
+                                </label>
+                                <input type="number" 
+                                       id="design_size" 
+                                       name="design_size"
+                                       value="{{ old('design_size', $qrCode->design['size'] ?? 300) }}"
+                                       min="100" 
+                                       max="2000" 
+                                       step="50"
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500">
+                            </div>
+                            
+                            <!-- Forma -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Forma dos Módulos</label>
+                                <div class="space-y-2">
+                                    <label class="flex items-center">
+                                        <input type="radio" 
+                                               name="design_shape" 
+                                               value="square"
+                                               {{ old('design_shape', $qrCode->design['shape'] ?? 'square') === 'square' ? 'checked' : '' }}
+                                               class="mr-2">
+                                        <span class="text-sm text-gray-700">Quadrados</span>
+                                    </label>
+                                    <label class="flex items-center">
+                                        <input type="radio" 
+                                               name="design_shape" 
+                                               value="round"
+                                               {{ old('design_shape', $qrCode->design['shape'] ?? 'square') === 'round' ? 'checked' : '' }}
+                                               class="mr-2">
+                                        <span class="text-sm text-gray-700">Arredondados</span>
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <p class="text-xs text-gray-500">
+                                ⚠️ Alterar o design regenerará a imagem do QR Code
+                            </p>
+                        </div>
+                    </div>
+
                     <!-- Informações adicionais -->
                     <div class="mb-6 p-4 bg-gray-50 rounded-md">
                         <h4 class="text-sm font-medium text-gray-900 mb-2">Informações do QR Code</h4>
@@ -99,4 +181,44 @@
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const toggleButton = document.getElementById('toggle-design');
+    const designSection = document.getElementById('design-section');
+    const form = document.querySelector('form');
+    
+    // Toggle design section
+    toggleButton.addEventListener('click', function() {
+        if (designSection.classList.contains('hidden')) {
+            designSection.classList.remove('hidden');
+            toggleButton.textContent = 'Ocultar Design';
+        } else {
+            designSection.classList.add('hidden');
+            toggleButton.textContent = 'Alterar Design';
+        }
+    });
+    
+    // Process design data before form submission
+    form.addEventListener('submit', function(e) {
+        const designData = {
+            colors: {
+                body: document.getElementById('design_color').value,
+                background: document.getElementById('design_background').value
+            },
+            size: parseInt(document.getElementById('design_size').value),
+            shape: document.querySelector('input[name="design_shape"]:checked').value,
+            margin: 10
+        };
+        
+        // Create hidden input for design data
+        const designInput = document.createElement('input');
+        designInput.type = 'hidden';
+        designInput.name = 'design';
+        designInput.value = JSON.stringify(designData);
+        
+        form.appendChild(designInput);
+    });
+});
+</script>
 @endsection
