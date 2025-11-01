@@ -566,8 +566,21 @@ function copyQrCode(qrCodeId) {
 
 // Copy Tracking Link
 function copyTrackingLink(qrCodeId) {
-    fetch(`/qrcodes/${qrCodeId}`)
-        .then(response => response.json())
+    fetch(`/qrcodes/${qrCodeId}`, {
+        method: 'GET',
+        headers: {
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
+            'Content-Type': 'application/json'
+        },
+        credentials: 'same-origin'
+    })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
         .then(data => {
             if (data.success && data.short_code) {
                 const trackingUrl = `${window.location.origin}/r/${data.short_code}`;
