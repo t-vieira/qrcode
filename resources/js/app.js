@@ -26,6 +26,92 @@ import Sortable from 'sortablejs'
 // Make Sortable available globally
 window.Sortable = Sortable
 
+// PWA - Service Worker Registration
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/service-worker.js')
+      .then((registration) => {
+        console.log('Service Worker registrado com sucesso:', registration.scope);
+        
+        // Verificar atualizações do service worker
+        registration.addEventListener('updatefound', () => {
+          const newWorker = registration.installing;
+          
+          newWorker.addEventListener('statechange', () => {
+            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+              // Nova versão disponível
+              if (confirm('Uma nova versão do app está disponível. Deseja atualizar?')) {
+                newWorker.postMessage({ type: 'SKIP_WAITING' });
+                window.location.reload();
+              }
+            }
+          });
+        });
+      })
+      .catch((error) => {
+        console.error('Erro ao registrar Service Worker:', error);
+      });
+  });
+}
+
+// PWA - Install Prompt
+let deferredPrompt;
+const installButton = document.getElementById('install-pwa-button');
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  // Prevenir o prompt automático
+  e.preventDefault();
+  deferredPrompt = e;
+  
+  // Mostrar botão de instalação se existir
+  if (installButton) {
+    installButton.style.display = 'block';
+    installButton.addEventListener('click', installPWA);
+  }
+});
+
+async function installPWA() {
+  if (!deferredPrompt) {
+    return;
+  }
+  
+  // Mostrar o prompt de instalação
+  deferredPrompt.prompt();
+  
+  // Aguardar a resposta do usuário
+  const { outcome } = await deferredPrompt.userChoice;
+  
+  if (outcome === 'accepted') {
+    console.log('PWA instalado pelo usuário');
+  } else {
+    console.log('PWA não instalado pelo usuário');
+  }
+  
+  // Limpar o prompt
+  deferredPrompt = null;
+  
+  // Esconder o botão
+  if (installButton) {
+    installButton.style.display = 'none';
+  }
+}
+
+// PWA - Detectar se já está instalado
+window.addEventListener('appinstalled', () => {
+  console.log('PWA instalado com sucesso');
+  deferredPrompt = null;
+  
+  if (installButton) {
+    installButton.style.display = 'none';
+  }
+});
+
+// Detectar se está rodando como PWA instalado
+if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true) {
+  document.body.classList.add('pwa-installed');
+  console.log('PWA está rodando em modo standalone');
+}
+
 // Custom Alpine.js components
 Alpine.data('qrCodeForm', () => ({
   qrType: 'url',
