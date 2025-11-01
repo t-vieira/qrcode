@@ -72,40 +72,64 @@
         <div class="flex items-center justify-between mb-4">
             <h2 class="text-lg font-semibold text-gray-900">Suas Pastas</h2>
             <a href="{{ route('folders.index') }}" class="text-sm text-teal-600 hover:text-teal-700 font-medium">
-                Ver todas
+                Gerenciar pastas
             </a>
         </div>
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            @foreach($folders->take(3) as $folder)
+        @php
+            $folderCount = $folders->count();
+            // Grid responsivo baseado na quantidade de pastas
+            if ($folderCount <= 3) {
+                $gridCols = 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3';
+                $cardPadding = 'p-4';
+                $iconSize = 'w-8 h-8';
+                $iconSvgSize = 'w-4 h-4';
+                $textSize = 'text-sm';
+                $subTextSize = 'text-xs';
+                $buttonPadding = 'py-2 px-3';
+                $buttonTextSize = 'text-xs';
+            } elseif ($folderCount <= 6) {
+                $gridCols = 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4';
+                $cardPadding = 'p-3';
+                $iconSize = 'w-7 h-7';
+                $iconSvgSize = 'w-3.5 h-3.5';
+                $textSize = 'text-xs';
+                $subTextSize = 'text-xs';
+                $buttonPadding = 'py-1.5 px-2';
+                $buttonTextSize = 'text-xs';
+            } else {
+                $gridCols = 'grid-cols-2 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8';
+                $cardPadding = 'p-2.5';
+                $iconSize = 'w-6 h-6';
+                $iconSvgSize = 'w-3 h-3';
+                $textSize = 'text-xs';
+                $subTextSize = 'text-xs';
+                $buttonPadding = 'py-1.5 px-2';
+                $buttonTextSize = 'text-xs';
+            }
+        @endphp
+        <div class="grid {{ $gridCols }} gap-3">
+            @foreach($folders as $folder)
             <div class="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow duration-200">
-                <div class="p-4">
-                    <div class="flex items-center mb-3">
-                        <div class="w-8 h-8 bg-teal-100 rounded-lg flex items-center justify-center mr-3">
-                            <svg class="w-4 h-4 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div class="{{ $cardPadding }}">
+                    <div class="flex items-center mb-2">
+                        <div class="{{ $iconSize }} bg-teal-100 rounded-lg flex items-center justify-center mr-2 flex-shrink-0">
+                            <svg class="{{ $iconSvgSize }} text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"/>
                             </svg>
                         </div>
-                        <div>
-                            <h3 class="text-sm font-semibold text-gray-900">{{ $folder->name }}</h3>
-                            <p class="text-xs text-gray-500">{{ $folder->qr_codes_count }} QR {{ $folder->qr_codes_count == 1 ? 'Code' : 'Codes' }}</p>
+                        <div class="min-w-0 flex-1">
+                            <h3 class="{{ $textSize }} font-semibold text-gray-900 truncate" title="{{ $folder->name }}">{{ $folder->name }}</h3>
+                            <p class="{{ $subTextSize }} text-gray-500">{{ $folder->qr_codes_count }} QR {{ $folder->qr_codes_count == 1 ? 'Code' : 'Codes' }}</p>
                         </div>
                     </div>
                     <a href="{{ route('folders.show', $folder) }}" 
-                       class="block w-full text-center py-2 px-3 bg-teal-600 text-white text-xs font-medium rounded-md hover:bg-teal-700 transition-colors duration-200">
+                       class="block w-full text-center {{ $buttonPadding }} bg-teal-600 text-white {{ $buttonTextSize }} font-medium rounded-md hover:bg-teal-700 transition-colors duration-200">
                         Ver Pasta
                     </a>
                 </div>
             </div>
             @endforeach
         </div>
-        @if($folders->count() > 3)
-        <div class="mt-4 text-center">
-            <a href="{{ route('folders.index') }}" 
-               class="text-sm text-teal-600 hover:text-teal-700 font-medium">
-                Ver mais {{ $folders->count() - 3 }} pasta{{ $folders->count() - 3 == 1 ? '' : 's' }}
-            </a>
-        </div>
-        @endif
     </div>
     @endif
 
