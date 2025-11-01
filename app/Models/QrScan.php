@@ -15,12 +15,29 @@ class QrScan extends Model
         'ip_address',
         'user_agent',
         'device_type',
+        'device_model',
         'os',
+        'os_version',
         'browser',
+        'browser_version',
+        'is_robot',
         'country',
         'city',
+        'region',
+        'region_code',
+        'postal_code',
+        'timezone',
         'latitude',
         'longitude',
+        'isp',
+        'organization',
+        'as_number',
+        'is_mobile_connection',
+        'is_proxy',
+        'is_hosting',
+        'language',
+        'referer',
+        'protocol',
         'is_unique',
         'scanned_at',
     ];
@@ -31,6 +48,10 @@ class QrScan extends Model
             'latitude' => 'decimal:8',
             'longitude' => 'decimal:8',
             'is_unique' => 'boolean',
+            'is_robot' => 'boolean',
+            'is_mobile_connection' => 'boolean',
+            'is_proxy' => 'boolean',
+            'is_hosting' => 'boolean',
             'scanned_at' => 'datetime',
         ];
     }
@@ -56,5 +77,46 @@ class QrScan extends Model
         }
 
         return null;
+    }
+
+    public function getFullLocationAttribute(): ?string
+    {
+        $parts = [];
+        
+        if ($this->city) {
+            $parts[] = $this->city;
+        }
+        
+        if ($this->region) {
+            $parts[] = $this->region;
+        }
+        
+        if ($this->country) {
+            $parts[] = $this->country;
+        }
+        
+        return !empty($parts) ? implode(', ', $parts) : null;
+    }
+
+    public function getBrowserWithVersionAttribute(): ?string
+    {
+        if (!$this->browser) {
+            return null;
+        }
+        
+        return $this->browser_version 
+            ? "{$this->browser} {$this->browser_version}"
+            : $this->browser;
+    }
+
+    public function getOsWithVersionAttribute(): ?string
+    {
+        if (!$this->os) {
+            return null;
+        }
+        
+        return $this->os_version 
+            ? "{$this->os} {$this->os_version}"
+            : $this->os;
     }
 }

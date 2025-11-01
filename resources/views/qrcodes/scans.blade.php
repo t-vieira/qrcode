@@ -199,58 +199,233 @@
             @if($scans->count() > 0)
                 <ul class="divide-y divide-gray-200">
                     @foreach($scans as $scan)
-                        <li class="px-4 py-4 sm:px-6">
-                            <div class="flex items-center justify-between">
-                                <div class="flex items-center">
-                                    <div class="flex-shrink-0">
-                                        <div class="w-10 h-10 bg-primary-500 rounded-full flex items-center justify-center">
-                                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
-                                            </svg>
+                        <li class="px-4 py-4 sm:px-6 hover:bg-gray-50 transition-colors">
+                            <!-- Cabeçalho do Scan (sempre visível) -->
+                            <div class="flex items-start justify-between mb-3">
+                                <div class="flex items-start flex-1">
+                                    <div class="flex-shrink-0 mr-4">
+                                        <div class="w-12 h-12 bg-gradient-to-br from-primary-500 to-primary-600 rounded-lg flex items-center justify-center shadow-sm">
+                                            @if($scan->is_robot)
+                                                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
+                                                </svg>
+                                            @else
+                                                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                                                </svg>
+                                            @endif
                                         </div>
                                     </div>
-                                    <div class="ml-4">
-                                        <div class="flex items-center">
-                                            <p class="text-sm font-medium text-gray-900">
+                                    <div class="flex-1 min-w-0">
+                                        <div class="flex items-center flex-wrap gap-2 mb-2">
+                                            <h3 class="text-base font-semibold text-gray-900">
                                                 {{ $scan->device_type ? ucfirst($scan->device_type) : 'Dispositivo' }}
-                                                @if($scan->is_unique)
-                                                    <span class="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                                        Único
-                                                    </span>
+                                                @if($scan->device_model)
+                                                    <span class="text-gray-600">• {{ $scan->device_model }}</span>
                                                 @endif
-                                            </p>
+                                            </h3>
+                                            @if($scan->is_unique)
+                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                                    <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                                                    </svg>
+                                                    Único
+                                                </span>
+                                            @endif
+                                            @if($scan->is_robot)
+                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                                                    Bot
+                                                </span>
+                                            @endif
+                                            @if($scan->is_proxy)
+                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                                    Proxy/VPN
+                                                </span>
+                                            @endif
+                                            @if($scan->is_mobile_connection)
+                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                                    Conexão Móvel
+                                                </span>
+                                            @endif
                                         </div>
-                                        <p class="text-sm text-gray-500">
-                                            {{ $scan->scanned_at->format('d/m/Y H:i:s') }}
-                                            @if($scan->country)
-                                                • {{ $scan->country }}
+                                        <div class="flex flex-wrap items-center gap-3 text-sm text-gray-600">
+                                            <span class="flex items-center">
+                                                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                                </svg>
+                                                {{ $scan->scanned_at->format('d/m/Y H:i:s') }}
+                                            </span>
+                                            @if($scan->full_location)
+                                                <span class="flex items-center">
+                                                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                                    </svg>
+                                                    {{ $scan->full_location }}
+                                                </span>
                                             @endif
+                                            @if($scan->ip_address)
+                                                <span class="flex items-center font-mono">
+                                                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"></path>
+                                                    </svg>
+                                                    {{ $scan->ip_address }}
+                                                </span>
+                                            @endif
+                                        </div>
+                                    </div>
+                                </div>
+                                <button 
+                                    onclick="toggleScanDetails({{ $scan->id }})"
+                                    class="ml-4 text-gray-400 hover:text-gray-600 transition-colors"
+                                    aria-label="Expandir detalhes">
+                                    <svg id="icon-{{ $scan->id }}" class="w-5 h-5 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                    </svg>
+                                </button>
+                            </div>
+
+                            <!-- Detalhes Expandidos (inicialmente ocultos) -->
+                            <div id="details-{{ $scan->id }}" class="hidden mt-4 pt-4 border-t border-gray-200">
+                                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                    <!-- Dispositivo e Navegador -->
+                                    <div>
+                                        <h4 class="text-xs font-semibold text-gray-500 uppercase mb-2">Dispositivo & Navegador</h4>
+                                        <dl class="space-y-1.5 text-sm">
+                                            @if($scan->browser_with_version)
+                                                <div class="flex justify-between">
+                                                    <dt class="text-gray-600">Navegador:</dt>
+                                                    <dd class="text-gray-900 font-medium">{{ $scan->browser_with_version }}</dd>
+                                                </div>
+                                            @endif
+                                            @if($scan->os_with_version)
+                                                <div class="flex justify-between">
+                                                    <dt class="text-gray-600">Sistema:</dt>
+                                                    <dd class="text-gray-900 font-medium">{{ $scan->os_with_version }}</dd>
+                                                </div>
+                                            @endif
+                                            @if($scan->device_model)
+                                                <div class="flex justify-between">
+                                                    <dt class="text-gray-600">Modelo:</dt>
+                                                    <dd class="text-gray-900 font-medium">{{ $scan->device_model }}</dd>
+                                                </div>
+                                            @endif
+                                            @if($scan->language)
+                                                <div class="flex justify-between">
+                                                    <dt class="text-gray-600">Idioma:</dt>
+                                                    <dd class="text-gray-900 font-medium">{{ strtoupper($scan->language) }}</dd>
+                                                </div>
+                                            @endif
+                                        </dl>
+                                    </div>
+
+                                    <!-- Localização -->
+                                    <div>
+                                        <h4 class="text-xs font-semibold text-gray-500 uppercase mb-2">Localização</h4>
+                                        <dl class="space-y-1.5 text-sm">
                                             @if($scan->city)
-                                                • {{ $scan->city }}
+                                                <div class="flex justify-between">
+                                                    <dt class="text-gray-600">Cidade:</dt>
+                                                    <dd class="text-gray-900 font-medium">{{ $scan->city }}</dd>
+                                                </div>
                                             @endif
-                                        </p>
+                                            @if($scan->region)
+                                                <div class="flex justify-between">
+                                                    <dt class="text-gray-600">Região:</dt>
+                                                    <dd class="text-gray-900 font-medium">{{ $scan->region }}</dd>
+                                                </div>
+                                            @endif
+                                            @if($scan->country)
+                                                <div class="flex justify-between">
+                                                    <dt class="text-gray-600">País:</dt>
+                                                    <dd class="text-gray-900 font-medium">{{ $scan->country }}</dd>
+                                                </div>
+                                            @endif
+                                            @if($scan->postal_code)
+                                                <div class="flex justify-between">
+                                                    <dt class="text-gray-600">CEP:</dt>
+                                                    <dd class="text-gray-900 font-medium">{{ $scan->postal_code }}</dd>
+                                                </div>
+                                            @endif
+                                            @if($scan->timezone)
+                                                <div class="flex justify-between">
+                                                    <dt class="text-gray-600">Fuso:</dt>
+                                                    <dd class="text-gray-900 font-medium">{{ $scan->timezone }}</dd>
+                                                </div>
+                                            @endif
+                                            @if($scan->coordinates)
+                                                <div class="flex justify-between">
+                                                    <dt class="text-gray-600">Coordenadas:</dt>
+                                                    <dd class="text-gray-900 font-mono text-xs">
+                                                        <a href="https://www.google.com/maps?q={{ $scan->latitude }},{{ $scan->longitude }}" 
+                                                           target="_blank" 
+                                                           class="text-primary-600 hover:text-primary-800 underline">
+                                                            {{ $scan->coordinates }}
+                                                        </a>
+                                                    </dd>
+                                                </div>
+                                            @endif
+                                        </dl>
+                                    </div>
+
+                                    <!-- Rede & Conexão -->
+                                    <div>
+                                        <h4 class="text-xs font-semibold text-gray-500 uppercase mb-2">Rede & Conexão</h4>
+                                        <dl class="space-y-1.5 text-sm">
+                                            @if($scan->isp)
+                                                <div class="flex justify-between">
+                                                    <dt class="text-gray-600">ISP:</dt>
+                                                    <dd class="text-gray-900 font-medium truncate ml-2" title="{{ $scan->isp }}">{{ $scan->isp }}</dd>
+                                                </div>
+                                            @endif
+                                            @if($scan->organization)
+                                                <div class="flex justify-between">
+                                                    <dt class="text-gray-600">Organização:</dt>
+                                                    <dd class="text-gray-900 font-medium truncate ml-2" title="{{ $scan->organization }}">{{ $scan->organization }}</dd>
+                                                </div>
+                                            @endif
+                                            @if($scan->as_number)
+                                                <div class="flex justify-between">
+                                                    <dt class="text-gray-600">AS Number:</dt>
+                                                    <dd class="text-gray-900 font-mono text-xs">{{ $scan->as_number }}</dd>
+                                                </div>
+                                            @endif
+                                            @if($scan->protocol)
+                                                <div class="flex justify-between">
+                                                    <dt class="text-gray-600">Protocolo:</dt>
+                                                    <dd class="text-gray-900 font-medium uppercase">{{ $scan->protocol }}</dd>
+                                                </div>
+                                            @endif
+                                            @if($scan->referer)
+                                                <div class="flex justify-between">
+                                                    <dt class="text-gray-600">Referer:</dt>
+                                                    <dd class="text-gray-900 text-xs truncate ml-2" title="{{ $scan->referer }}">
+                                                        <a href="{{ $scan->referer }}" target="_blank" class="text-primary-600 hover:text-primary-800 underline">
+                                                            {{ Str::limit($scan->referer, 40) }}
+                                                        </a>
+                                                    </dd>
+                                                </div>
+                                            @endif
+                                        </dl>
                                     </div>
                                 </div>
-                                
-                                <div class="flex items-center space-x-4">
-                                    <div class="text-right">
-                                        @if($scan->browser)
-                                            <p class="text-sm text-gray-900">{{ $scan->browser }}</p>
-                                        @endif
-                                        @if($scan->os)
-                                            <p class="text-sm text-gray-500">{{ $scan->os }}</p>
-                                        @endif
-                                        @if($scan->ip_address)
-                                            <p class="text-sm text-gray-500">{{ $scan->ip_address }}</p>
-                                        @endif
+
+                                <!-- User Agent (expandível) -->
+                                @if($scan->user_agent)
+                                    <div class="mt-4 pt-4 border-t border-gray-200">
+                                        <button 
+                                            onclick="toggleUserAgent({{ $scan->id }})"
+                                            class="text-xs font-semibold text-gray-500 uppercase hover:text-gray-700 flex items-center">
+                                            <span>User Agent</span>
+                                            <svg id="ua-icon-{{ $scan->id }}" class="w-4 h-4 ml-1 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                            </svg>
+                                        </button>
+                                        <div id="ua-{{ $scan->id }}" class="hidden mt-2 p-3 bg-gray-50 rounded-md">
+                                            <code class="text-xs text-gray-700 break-all">{{ $scan->user_agent }}</code>
+                                        </div>
                                     </div>
-                                    
-                                    <div class="text-right">
-                                        <p class="text-sm text-gray-500">
-                                            {{ $scan->scanned_at->diffForHumans() }}
-                                        </p>
-                                    </div>
-                                </div>
+                                @endif
                             </div>
                         </li>
                     @endforeach
@@ -278,4 +453,34 @@
         </div>
     </div>
 </div>
+
+@push('scripts')
+<script>
+    function toggleScanDetails(scanId) {
+        const details = document.getElementById('details-' + scanId);
+        const icon = document.getElementById('icon-' + scanId);
+        
+        if (details.classList.contains('hidden')) {
+            details.classList.remove('hidden');
+            icon.classList.add('rotate-180');
+        } else {
+            details.classList.add('hidden');
+            icon.classList.remove('rotate-180');
+        }
+    }
+
+    function toggleUserAgent(scanId) {
+        const uaDiv = document.getElementById('ua-' + scanId);
+        const uaIcon = document.getElementById('ua-icon-' + scanId);
+        
+        if (uaDiv.classList.contains('hidden')) {
+            uaDiv.classList.remove('hidden');
+            uaIcon.classList.add('rotate-180');
+        } else {
+            uaDiv.classList.add('hidden');
+            uaIcon.classList.remove('rotate-180');
+        }
+    }
+</script>
+@endpush
 @endsection

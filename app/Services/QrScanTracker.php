@@ -29,8 +29,19 @@ class QrScanTracker
         $deviceType = $this->getDeviceType();
         $os = $this->agent->platform();
         $browser = $this->agent->browser();
+        $browserVersion = $this->agent->version($browser);
+        $osVersion = $this->agent->version($os);
+        $deviceModel = $this->getDeviceModel();
+        $isRobot = $this->agent->isRobot();
         
-        // Obter geolocalização
+        // Obter idioma do navegador
+        $language = $request->getPreferredLanguage();
+        
+        // Obter referer e protocolo
+        $referer = $request->header('referer');
+        $protocol = $request->getScheme();
+        
+        // Obter geolocalização expandida
         $location = $this->getLocation($ipAddress);
         
         // Verificar se é um scan único
@@ -42,12 +53,29 @@ class QrScanTracker
             'ip_address' => $ipAddress,
             'user_agent' => $userAgent,
             'device_type' => $deviceType,
+            'device_model' => $deviceModel,
             'os' => $os,
+            'os_version' => $osVersion,
             'browser' => $browser,
+            'browser_version' => $browserVersion,
+            'is_robot' => $isRobot,
             'country' => $location['country'] ?? null,
             'city' => $location['city'] ?? null,
+            'region' => $location['region'] ?? null,
+            'region_code' => $location['regionCode'] ?? null,
+            'postal_code' => $location['zip'] ?? null,
+            'timezone' => $location['timezone'] ?? null,
             'latitude' => $location['latitude'] ?? null,
             'longitude' => $location['longitude'] ?? null,
+            'isp' => $location['isp'] ?? null,
+            'organization' => $location['org'] ?? null,
+            'as_number' => $location['as'] ?? null,
+            'is_mobile_connection' => $location['mobile'] ?? false,
+            'is_proxy' => $location['proxy'] ?? false,
+            'is_hosting' => $location['hosting'] ?? false,
+            'language' => $language,
+            'referer' => $referer,
+            'protocol' => $protocol,
             'is_unique' => $isUnique,
             'scanned_at' => now(),
         ]);
@@ -68,6 +96,35 @@ class QrScanTracker
         return 'desktop';
     }
 
+    protected function getDeviceModel(): ?string
+    {
+        $device = $this->agent->device();
+        
+        // Se não conseguir o modelo específico, tenta obter mais informações
+        if (empty($device)) {
+            // Para mobile, tenta obter mais informações
+            if ($this->agent->isMobile()) {
+                $platform = $this->agent->platform();
+                // Alguns devices podem ter mais informações no user agent
+                $userAgent = $this->agent->getUserAgent();
+                
+                // Tenta extrair modelo de iPhone
+                if (preg_match('/iPhone\s*([0-9,\s]+)/i', $userAgent, $matches)) {
+                    return 'iPhone ' . trim($matches[1]);
+                }
+                
+                // Tenta extrair modelo de Android
+                if (preg_match('/;\s*([A-Z][a-z]+[A-Z]?[0-9]+[a-z0-9]*)\s*Build/i', $userAgent, $matches)) {
+                    return trim($matches[1]);
+                }
+                
+                return $platform ? "Mobile ({$platform})" : 'Mobile';
+            }
+        }
+        
+        return $device;
+    }
+
     protected function getLocation(string $ipAddress): array
     {
         // Verificar se é IP local
@@ -75,8 +132,16 @@ class QrScanTracker
             return [
                 'country' => 'BR',
                 'city' => 'São Paulo',
+                'region' => 'São Paulo',
+                'regionCode' => 'SP',
+                'timezone' => 'America/Sao_Paulo',
                 'latitude' => -23.5505,
                 'longitude' => -46.6333,
+                'isp' => 'Local Network',
+                'org' => 'Local',
+                'mobile' => false,
+                'proxy' => false,
+                'hosting' => false,
             ];
         }
         
@@ -85,8 +150,9 @@ class QrScanTracker
         
         return Cache::remember($cacheKey, 86400, function () use ($ipAddress) {
             try {
-                // Usar ip-api.com (gratuito)
-                $response = Http::timeout(10)->get("http://ip-api.com/json/{$ipAddress}");
+                // Usar ip-api.com (gratuito) - retorna mais informações
+                // Campos: status,message,continent,continentCode,country,countryCode,region,regionName,city,district,zip,lat,lon,timezone,offset,currency,isp,org,as,asname,mobile,proxy,hosting,query
+                $response = Http::timeout(10)->get("http://ip-api.com/json/{$ipAddress}?fields=status,message,country,countryCode,region,regionName,city,zip,lat,lon,timezone,isp,org,as,mobile,proxy,hosting");
                 
                 if ($response->successful()) {
                     $data = $response->json();
@@ -95,19 +161,30 @@ class QrScanTracker
                         \Log::info('Geolocalização obtida com sucesso', [
                             'ip' => $ipAddress,
                             'country' => $data['countryCode'] ?? null,
-                            'city' => $data['city'] ?? null
+                            'city' => $data['city'] ?? null,
+                            'isp' => $data['isp'] ?? null,
                         ]);
                         
                         return [
                             'country' => $data['countryCode'] ?? null,
                             'city' => $data['city'] ?? null,
+                            'region' => $data['regionName'] ?? null,
+                            'regionCode' => $data['region'] ?? null,
+                            'zip' => $data['zip'] ?? null,
+                            'timezone' => $data['timezone'] ?? null,
                             'latitude' => $data['lat'] ?? null,
                             'longitude' => $data['lon'] ?? null,
+                            'isp' => $data['isp'] ?? null,
+                            'org' => $data['org'] ?? null,
+                            'as' => $data['as'] ?? null,
+                            'mobile' => $data['mobile'] ?? false,
+                            'proxy' => $data['proxy'] ?? false,
+                            'hosting' => $data['hosting'] ?? false,
                         ];
                     } else {
                         \Log::warning('API de geolocalização retornou erro', [
                             'ip' => $ipAddress,
-                            'response' => $data
+                            'message' => $data['message'] ?? 'Unknown error'
                         ]);
                     }
                 } else {
