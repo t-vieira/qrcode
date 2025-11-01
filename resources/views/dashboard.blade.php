@@ -112,7 +112,9 @@
     <!-- QR Codes List -->
     <div class="space-y-4">
         @if(isset($recentQrCodes) && $recentQrCodes->count() > 0)
-            <p class="text-sm text-gray-500 mb-4">Encontrados {{ $recentQrCodes->count() }} QR Codes</p>
+            <p class="text-sm text-gray-500 mb-4">
+                Mostrando {{ $recentQrCodes->count() }} de {{ $recentQrCodes->total() }} QR Code{{ $recentQrCodes->total() != 1 ? 's' : '' }}
+            </p>
         @endif
         @forelse($recentQrCodes ?? [] as $qrcode)
         <div class="qr-code-card">
@@ -280,6 +282,13 @@
                             </div>
                         @endforelse
                     </div>
+
+    <!-- Pagination -->
+    @if(isset($recentQrCodes) && $recentQrCodes->hasPages())
+        <div class="mt-8">
+            {{ $recentQrCodes->links() }}
+        </div>
+    @endif
                         </div>
 
 <!-- Download Modal -->

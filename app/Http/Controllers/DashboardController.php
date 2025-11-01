@@ -22,12 +22,11 @@ class DashboardController extends Controller
             ->orderBy('name')
             ->get();
         
-        // QR Codes recentes com pasta
+        // QR Codes com pasta - mostrar todos com paginação
         $recentQrCodes = $user->qrCodes()
             ->with('folder')
             ->orderBy('created_at', 'desc')
-            ->limit(5)
-            ->get();
+            ->paginate(20);
 
         // Dados para o gráfico de scans
         $scansChartData = $this->getScansChartData($user);

@@ -208,11 +208,13 @@
                             <div class="flex items-center space-x-2">
                                 <span class="text-sm text-gray-500">Estado:</span>
                                 <div class="flex items-center space-x-1">
-                                    <div class="relative">
-                                        <input type="checkbox" class="sr-only" {{ $qrcode->is_active ? 'checked' : '' }}>
-                                        <div class="w-10 h-6 bg-gray-200 rounded-full shadow-inner"></div>
-                                        <div class="absolute w-4 h-4 bg-white rounded-full shadow top-1 left-1 transition-transform"></div>
-                                    </div>
+                                    <label class="relative inline-flex items-center cursor-pointer">
+                                        <input type="checkbox" 
+                                               class="sr-only peer" 
+                                               {{ $qrcode->status === 'active' ? 'checked' : '' }}
+                                               onchange="toggleQrStatus({{ $qrcode->id }}, this.checked)">
+                                        <div class="w-10 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600"></div>
+                                    </label>
                                     <span class="text-sm font-medium {{ $qrcode->status === 'active' ? 'text-green-600' : 'text-gray-500' }}">
                                         {{ $qrcode->status === 'active' ? 'Ativo' : 'Pausado' }}
                                     </span>
@@ -481,6 +483,54 @@ document.addEventListener('keydown', function(event) {
         closeDownloadModal();
     }
 });
+
+// Toggle QR Code Status
+function toggleQrStatus(qrCodeId, isActive) {
+    const status = isActive ? 'active' : 'archived';
+    const toggle = event.target;
+    
+    console.log('Alterando status do QR Code:', qrCodeId, 'para:', status);
+    
+    fetch(`/qrcodes/${qrCodeId}/toggle-status`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+            'Accept': 'application/json'
+        },
+        body: JSON.stringify({ status: status })
+    })
+    .then(response => {
+        console.log('Response status:', response.status);
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log('Response data:', data);
+        if (data.success) {
+            // Update the status text
+            const statusSpan = toggle.closest('.flex').querySelector('span');
+            if (statusSpan) {
+                statusSpan.textContent = isActive ? 'Ativo' : 'Pausado';
+                statusSpan.className = `text-sm font-medium ${isActive ? 'text-green-600' : 'text-gray-500'}`;
+            }
+            console.log('Status atualizado com sucesso');
+        } else {
+            console.error('Erro do servidor:', data.message);
+            alert('Erro ao alterar status: ' + data.message);
+            // Revert the toggle
+            toggle.checked = !isActive;
+        }
+    })
+    .catch(error => {
+        console.error('Erro na requisição:', error);
+        alert('Erro ao alterar status do QR Code: ' + error.message);
+        // Revert the toggle
+        toggle.checked = !isActive;
+    });
+}
 
 // Copy Tracking Link
 function copyTrackingLink(qrCodeId, buttonElement) {
