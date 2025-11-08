@@ -276,73 +276,50 @@
                                     </div>
                                 </div>
                         
-                        <!-- Statistics and Status -->
-                        <div class="flex-shrink-0 text-right w-48">
-                            <!-- Estatísticas Principais -->
-                            <div class="mb-4 space-y-2">
-                                <div>
-                                    <div class="text-2xl font-bold text-blue-600">{{ $qrcode->stats_total_scans ?? 0 }}</div>
-                                    <div class="text-xs text-gray-500">Total de Scans</div>
+                        <!-- Statistics and Status - Compact -->
+                        <div class="flex-shrink-0 text-right">
+                            <!-- Estatísticas Compactas -->
+                            <div class="flex items-center justify-end space-x-4 mb-3">
+                                <div class="text-center">
+                                    <div class="text-lg font-bold text-blue-600">{{ $qrcode->stats_total_scans ?? 0 }}</div>
+                                    <div class="text-xs text-gray-500">Scans</div>
                                 </div>
-                                <div class="flex items-center justify-end space-x-3 text-xs">
-                                    <div>
-                                        <div class="font-semibold text-green-600">{{ $qrcode->stats_unique_scans ?? 0 }}</div>
-                                        <div class="text-gray-500">Únicos</div>
-                                    </div>
-                                    <div>
-                                        <div class="font-semibold text-orange-600">{{ $qrcode->stats_today_scans ?? 0 }}</div>
-                                        <div class="text-gray-500">Hoje</div>
-                                    </div>
+                                <div class="text-center">
+                                    <div class="text-sm font-semibold text-green-600">{{ $qrcode->stats_unique_scans ?? 0 }}</div>
+                                    <div class="text-xs text-gray-500">Únicos</div>
+                                </div>
+                                <div class="text-center">
+                                    <div class="text-sm font-semibold text-orange-600">{{ $qrcode->stats_today_scans ?? 0 }}</div>
+                                    <div class="text-xs text-gray-500">Hoje</div>
                                 </div>
                             </div>
                             
-                            <!-- Último Scan -->
+                            <!-- Último Scan Compacto -->
                             @if(isset($qrcode->stats_last_scan) && $qrcode->stats_last_scan)
-                                <div class="mb-3 p-2 bg-gray-50 rounded-lg">
-                                    <div class="text-xs text-gray-500 mb-1">Último Scan</div>
-                                    <div class="text-xs font-medium text-gray-900">
-                                        {{ \App\Helpers\DateHelper::formatWithMonth($qrcode->stats_last_scan->scanned_at) }}
-                                    </div>
-                                    <div class="text-xs text-gray-500">
-                                        {{ $qrcode->stats_last_scan->scanned_at->format('H:i') }}
-                                        @if($qrcode->stats_last_scan->country)
-                                            • {{ $qrcode->stats_last_scan->country }}
-                                        @endif
-                                    </div>
+                                <div class="mb-2 text-xs text-gray-500">
+                                    <span class="font-medium text-gray-700">Último:</span> 
+                                    {{ $qrcode->stats_last_scan->scanned_at->format('d/m H:i') }}
+                                    @if($qrcode->stats_last_scan->country)
+                                        <span class="text-gray-400">• {{ $qrcode->stats_last_scan->country }}</span>
+                                    @endif
                                 </div>
                             @else
-                                <div class="mb-3 p-2 bg-gray-50 rounded-lg">
-                                    <div class="text-xs text-gray-400">Nenhum scan ainda</div>
-                                </div>
+                                <div class="mb-2 text-xs text-gray-400">Sem scans</div>
                             @endif
                             
-                            <!-- Estatísticas Semana/Mês -->
-                            <div class="mb-3 flex items-center justify-end space-x-2 text-xs">
-                                <div class="text-center">
-                                    <div class="font-semibold text-gray-700">{{ $qrcode->stats_this_week_scans ?? 0 }}</div>
-                                    <div class="text-gray-500">Esta Semana</div>
-                                </div>
-                                <div class="text-center">
-                                    <div class="font-semibold text-gray-700">{{ $qrcode->stats_this_month_scans ?? 0 }}</div>
-                                    <div class="text-gray-500">Este Mês</div>
-                                </div>
-                            </div>
-                            
-                            <!-- Link para Estatísticas -->
-                            <a href="{{ route('qrcodes.scans', $qrcode) }}" class="block text-xs text-blue-600 hover:text-blue-800 font-medium mb-3">
-                                Ver Estatísticas →
-                            </a>
-                            
-                            <!-- Status -->
-                            <div class="flex items-center justify-end space-x-2">
-                                <span class="text-xs text-gray-500">Estado:</span>
+                            <!-- Status e Link -->
+                            <div class="flex items-center justify-end space-x-3">
+                                <a href="{{ route('qrcodes.scans', $qrcode) }}" class="text-xs text-blue-600 hover:text-blue-800">
+                                    Detalhes
+                                </a>
+                                <span class="text-gray-300">|</span>
                                 <div class="flex items-center space-x-1">
                                     <label class="relative inline-flex items-center cursor-pointer">
                                         <input type="checkbox" 
                                                class="sr-only peer" 
                                                {{ $qrcode->status === 'active' ? 'checked' : '' }}
                                                onchange="toggleQrStatus({{ $qrcode->id }}, this.checked)">
-                                        <div class="w-10 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600"></div>
+                                        <div class="w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-teal-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-teal-600"></div>
                                     </label>
                                     <span class="text-xs font-medium {{ $qrcode->status === 'active' ? 'text-green-600' : 'text-gray-500' }}">
                                         {{ $qrcode->status === 'active' ? 'Ativo' : 'Pausado' }}
