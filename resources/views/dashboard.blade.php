@@ -282,15 +282,15 @@
                             <div class="flex items-center justify-end space-x-4 mb-3">
                                 <div class="text-center">
                                     <div class="text-lg font-bold text-blue-600">{{ $qrcode->stats_total_scans ?? 0 }}</div>
-                                    <div class="text-xs text-gray-500">Scans</div>
+                                    <div class="text-xs text-gray-500">Total</div>
                                 </div>
                                 <div class="text-center">
-                                    <div class="text-sm font-semibold text-green-600">{{ $qrcode->stats_unique_scans ?? 0 }}</div>
-                                    <div class="text-xs text-gray-500">Únicos</div>
+                                    <div class="text-sm font-semibold text-green-600">{{ $qrcode->stats_this_month_scans ?? 0 }}</div>
+                                    <div class="text-xs text-gray-500">Este Mês</div>
                                 </div>
                                 <div class="text-center">
-                                    <div class="text-sm font-semibold text-orange-600">{{ $qrcode->stats_today_scans ?? 0 }}</div>
-                                    <div class="text-xs text-gray-500">Hoje</div>
+                                    <div class="text-sm font-semibold text-orange-600">{{ $qrcode->stats_last_month_scans ?? 0 }}</div>
+                                    <div class="text-xs text-gray-500">Mês Passado</div>
                                 </div>
                             </div>
                             
@@ -313,18 +313,10 @@
                                     Detalhes
                                 </a>
                                 <span class="text-gray-300">|</span>
-                                <div class="flex items-center space-x-1">
-                                    <label class="relative inline-flex items-center cursor-pointer">
-                                        <input type="checkbox" 
-                                               class="sr-only peer" 
-                                               {{ $qrcode->status === 'active' ? 'checked' : '' }}
-                                               onchange="toggleQrStatus({{ $qrcode->id }}, this.checked)">
-                                        <div class="w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-teal-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-teal-600"></div>
-                                    </label>
-                                    <span class="text-xs font-medium {{ $qrcode->status === 'active' ? 'text-green-600' : 'text-gray-500' }}">
-                                        {{ $qrcode->status === 'active' ? 'Ativo' : 'Pausado' }}
-                                    </span>
-                                </div>
+                                <button onclick="toggleQrStatus({{ $qrcode->id }}, '{{ $qrcode->status === 'active' ? 'archived' : 'active' }}', this)" 
+                                        class="text-xs px-2 py-1 rounded {{ $qrcode->status === 'active' ? 'bg-green-100 text-green-700 hover:bg-green-200' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }} transition-colors">
+                                    {{ $qrcode->status === 'active' ? '✓ Ativo' : '○ Pausado' }}
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -453,11 +445,16 @@
 
 <script>
 // Toggle QR Code Status
-function toggleQrStatus(qrCodeId, isActive) {
-    const status = isActive ? 'active' : 'archived';
-    const toggle = event.target;
+function toggleQrStatus(qrCodeId, newStatus, buttonElement) {
+    const button = buttonElement || event.target.closest('button');
+    const originalText = button.textContent;
+    const originalClass = button.className;
     
-    console.log('Alterando status do QR Code:', qrCodeId, 'para:', status);
+    // Disable button during request
+    button.disabled = true;
+    button.textContent = 'Carregando...';
+    
+    console.log('Alterando status do QR Code:', qrCodeId, 'para:', newStatus);
     
     fetch(`/qrcodes/${qrCodeId}/toggle-status`, {
         method: 'POST',
@@ -466,7 +463,7 @@ function toggleQrStatus(qrCodeId, isActive) {
             'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
             'Accept': 'application/json'
         },
-        body: JSON.stringify({ status: status })
+        body: JSON.stringify({ status: newStatus })
     })
     .then(response => {
         console.log('Response status:', response.status);
@@ -478,25 +475,34 @@ function toggleQrStatus(qrCodeId, isActive) {
     .then(data => {
         console.log('Response data:', data);
         if (data.success) {
-            // Update the status text
-            const statusSpan = toggle.closest('.flex').querySelector('span');
-            if (statusSpan) {
-                statusSpan.textContent = isActive ? 'Ativo' : 'Pausado';
-                statusSpan.className = `text-sm font-medium ${isActive ? 'text-green-600' : 'text-gray-500'}`;
+            // Update button appearance
+            if (newStatus === 'active') {
+                button.className = 'text-xs px-2 py-1 rounded bg-green-100 text-green-700 hover:bg-green-200 transition-colors';
+                button.textContent = '✓ Ativo';
+                button.setAttribute('onclick', `toggleQrStatus(${qrCodeId}, 'archived', this)`);
+            } else {
+                button.className = 'text-xs px-2 py-1 rounded bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors';
+                button.textContent = '○ Pausado';
+                button.setAttribute('onclick', `toggleQrStatus(${qrCodeId}, 'active', this)`);
             }
             console.log('Status atualizado com sucesso');
         } else {
             console.error('Erro do servidor:', data.message);
             alert('Erro ao alterar status: ' + data.message);
-            // Revert the toggle
-            toggle.checked = !isActive;
+            // Revert button
+            button.textContent = originalText;
+            button.className = originalClass;
         }
     })
     .catch(error => {
         console.error('Erro na requisição:', error);
         alert('Erro ao alterar status do QR Code: ' + error.message);
-        // Revert the toggle
-        toggle.checked = !isActive;
+        // Revert button
+        button.textContent = originalText;
+        button.className = originalClass;
+    })
+    .finally(() => {
+        button.disabled = false;
     });
 }
 

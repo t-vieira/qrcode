@@ -121,6 +121,10 @@ class QrCode extends Model
             ->whereMonth('scanned_at', now()->month)
             ->whereYear('scanned_at', now()->year)
             ->count());
+        $this->setAttribute('stats_last_month_scans', $this->scans()
+            ->whereMonth('scanned_at', now()->subMonth()->month)
+            ->whereYear('scanned_at', now()->subMonth()->year)
+            ->count());
         $this->setAttribute('stats_last_scan', $this->scans()->latest('scanned_at')->first());
     }
 }
