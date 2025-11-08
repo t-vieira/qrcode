@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 use App\Models\QrScan;
+use App\Models\QrCode;
 
 class ReportsController extends Controller
 {
@@ -41,9 +42,23 @@ class ReportsController extends Controller
 
         // QR Codes mais escaneados (usando dados reais da tabela qr_scans)
         $top_qr_codes = $user->qrCodes()
+            ->with('folder')
             ->withCount('scans')
             ->orderBy('scans_count', 'desc')
             ->limit(10)
+            ->get()
+            ->map(function ($qrcode) {
+                $qrcode->loadStats();
+                return $qrcode;
+            });
+        
+        // Últimos scans (20 mais recentes)
+        $recent_scans = QrScan::whereHas('qrCode', function($q) use ($user) {
+                $q->where('user_id', $user->id);
+            })
+            ->with('qrCode:id,name,type')
+            ->latest('scanned_at')
+            ->limit(20)
             ->get();
 
         // Scans por dia dos últimos 30 dias (dados reais)
@@ -105,6 +120,7 @@ class ReportsController extends Controller
         return view('reports.index', compact(
             'stats',
             'top_qr_codes',
+            'recent_scans',
             'scans_by_day',
             'scans_by_type',
             'scans_by_device',

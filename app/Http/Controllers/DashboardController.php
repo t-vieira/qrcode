@@ -81,27 +81,6 @@ class DashboardController extends Controller
             $recentQrCodes->setCollection($sorted->values());
         }
 
-        // QR Codes mais escaneados (top 5)
-        $topScannedQrCodes = $user->qrCodes()
-            ->with('folder')
-            ->withCount('scans')
-            ->orderBy('scans_count', 'desc')
-            ->limit(5)
-            ->get()
-            ->map(function ($qrcode) {
-                $qrcode->loadStats();
-                return $qrcode;
-            });
-        
-        // Últimos scans (10 mais recentes)
-        $recentScans = QrScan::whereHas('qrCode', function($q) use ($user) {
-                $q->where('user_id', $user->id);
-            })
-            ->with('qrCode:id,name,type')
-            ->latest('scanned_at')
-            ->limit(10)
-            ->get();
-
         // Dados para o gráfico de scans
         $scansChartData = $this->getScansChartData($user);
         
@@ -118,8 +97,6 @@ class DashboardController extends Controller
             'recentQrCodes',
             'scansChartData',
             'folders',
-            'topScannedQrCodes',
-            'recentScans',
             'qrCodeTypes'
         ));
     }
