@@ -104,4 +104,23 @@ class QrCode extends Model
 
         return $this->content['url'] ?? $this->content['text'] ?? '';
     }
+
+    /**
+     * Carregar estatísticas detalhadas do QR Code
+     */
+    public function loadStats(): void
+    {
+        // Carregar estatísticas em atributos dinâmicos para evitar N+1
+        $this->setAttribute('stats_total_scans', $this->scans()->count());
+        $this->setAttribute('stats_unique_scans', $this->scans()->where('is_unique', true)->count());
+        $this->setAttribute('stats_today_scans', $this->scans()->whereDate('scanned_at', today())->count());
+        $this->setAttribute('stats_this_week_scans', $this->scans()
+            ->whereBetween('scanned_at', [now()->startOfWeek(), now()->endOfWeek()])
+            ->count());
+        $this->setAttribute('stats_this_month_scans', $this->scans()
+            ->whereMonth('scanned_at', now()->month)
+            ->whereYear('scanned_at', now()->year)
+            ->count());
+        $this->setAttribute('stats_last_scan', $this->scans()->latest('scanned_at')->first());
+    }
 }

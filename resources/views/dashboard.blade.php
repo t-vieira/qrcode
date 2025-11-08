@@ -42,29 +42,134 @@
             </div>
 
     <!-- Filter Bar -->
-    <div class="flex items-center space-x-4 mb-6">
-        <select class="form-input w-auto">
-            <option>Tipos De Código QR</option>
-            <option>Website</option>
-            <option>Texto</option>
-            <option>Email</option>
+    <form method="GET" action="{{ route('dashboard') }}" class="flex flex-wrap items-center gap-4 mb-6">
+        <select name="type" class="form-input w-auto" onchange="this.form.submit()">
+            <option value="all" {{ request('type') == 'all' || !request('type') ? 'selected' : '' }}>Todos os Tipos</option>
+            @foreach($qrCodeTypes ?? [] as $type)
+                <option value="{{ $type }}" {{ request('type') == $type ? 'selected' : '' }}>
+                    {{ ucfirst($type) }}
+                </option>
+            @endforeach
         </select>
         
-        <select class="form-input w-auto">
-            <option>Último Criado</option>
-            <option>Mais Antigo</option>
-            <option>Mais Recente</option>
+        <select name="status" class="form-input w-auto" onchange="this.form.submit()">
+            <option value="all" {{ request('status') == 'all' || !request('status') ? 'selected' : '' }}>Todos os Status</option>
+            <option value="active" {{ request('status') == 'active' ? 'selected' : '' }}>Ativos</option>
+            <option value="archived" {{ request('status') == 'archived' ? 'selected' : '' }}>Pausados</option>
+        </select>
+        
+        <select name="order" class="form-input w-auto" onchange="this.form.submit()">
+            <option value="created_at" {{ request('order') == 'created_at' || !request('order') ? 'selected' : '' }}>Último Criado</option>
+            <option value="scans" {{ request('order') == 'scans' ? 'selected' : '' }}>Mais Escaneados</option>
+            <option value="last_scan" {{ request('order') == 'last_scan' ? 'selected' : '' }}>Último Scan</option>
+            <option value="name" {{ request('order') == 'name' ? 'selected' : '' }}>Nome (A-Z)</option>
         </select>
         
         <div class="flex-1 max-w-md">
             <div class="relative">
-                <input type="text" placeholder="Buscar Códigos QR" class="form-input pl-10">
+                <input type="text" name="search" value="{{ request('search') }}" placeholder="Buscar Códigos QR" class="form-input pl-10" onkeyup="if(event.key === 'Enter') this.form.submit()">
                 <svg class="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                                </svg>
+                </svg>
+                @if(request('search'))
+                    <a href="{{ route('dashboard') }}" class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </a>
+                @endif
+            </div>
+        </div>
+    </form>
+
+    <!-- Top Scanned QR Codes -->
+    @if(isset($topScannedQrCodes) && $topScannedQrCodes->count() > 0)
+    <div class="mb-8">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg font-semibold text-gray-900">🔥 Mais Escaneados</h2>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+            @foreach($topScannedQrCodes as $index => $qrcode)
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow duration-200 p-4">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-xs font-bold text-teal-600 bg-teal-50 px-2 py-1 rounded">#{{ $index + 1 }}</span>
+                    <span class="text-xs font-medium text-gray-500">{{ ucfirst($qrcode->type) }}</span>
+                </div>
+                <h3 class="text-sm font-semibold text-gray-900 truncate mb-2" title="{{ $qrcode->name }}">{{ $qrcode->name }}</h3>
+                <div class="flex items-center justify-between">
+                    <div>
+                        <div class="text-lg font-bold text-blue-600">{{ $qrcode->stats_total_scans ?? 0 }}</div>
+                        <div class="text-xs text-gray-500">Scans</div>
                     </div>
+                    <a href="{{ route('qrcodes.show', $qrcode) }}" class="text-xs text-teal-600 hover:text-teal-700 font-medium">
+                        Ver →
+                    </a>
                 </div>
             </div>
+            @endforeach
+        </div>
+    </div>
+    @endif
+
+    <!-- Recent Scans -->
+    @if(isset($recentScans) && $recentScans->count() > 0)
+    <div class="mb-8">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg font-semibold text-gray-900">📊 Últimos Scans</h2>
+            <a href="{{ route('reports') }}" class="text-sm text-teal-600 hover:text-teal-700 font-medium">
+                Ver todos →
+            </a>
+        </div>
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+            <div class="divide-y divide-gray-200">
+                @foreach($recentScans as $scan)
+                <div class="p-4 hover:bg-gray-50 transition-colors">
+                    <div class="flex items-center justify-between">
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center space-x-2 mb-1">
+                                <a href="{{ route('qrcodes.show', $scan->qrCode) }}" class="text-sm font-semibold text-gray-900 hover:text-teal-600 truncate">
+                                    {{ $scan->qrCode->name }}
+                                </a>
+                                <span class="text-xs text-gray-500">•</span>
+                                <span class="text-xs text-gray-500">{{ ucfirst($scan->qrCode->type) }}</span>
+                            </div>
+                            <div class="flex items-center space-x-4 text-xs text-gray-500">
+                                @if($scan->country)
+                                    <span class="flex items-center">
+                                        <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                        </svg>
+                                        {{ $scan->country }}
+                                        @if($scan->city)
+                                            , {{ $scan->city }}
+                                        @endif
+                                    </span>
+                                @endif
+                                @if($scan->device_type)
+                                    <span class="flex items-center">
+                                        <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                                        </svg>
+                                        {{ ucfirst($scan->device_type) }}
+                                    </span>
+                                @endif
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-xs text-gray-500">
+                                {{ \App\Helpers\DateHelper::formatWithMonth($scan->scanned_at) }}
+                            </div>
+                            <div class="text-xs text-gray-400">
+                                {{ $scan->scanned_at->format('H:i') }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                @endforeach
+            </div>
+        </div>
+    </div>
+    @endif
 
     <!-- Pastas -->
     @if(isset($folders) && $folders->count() > 0)
@@ -174,8 +279,11 @@
                     <div class="flex items-start justify-between">
                         <div class="flex-1">
                             <div class="flex items-center space-x-2 mb-2">
-                                <span class="text-xs font-medium text-gray-500">Website</span>
-            </div>
+                                <span class="text-xs font-medium px-2 py-1 rounded bg-teal-50 text-teal-700">{{ ucfirst($qrcode->type) }}</span>
+                                @if($qrcode->is_dynamic)
+                                    <span class="text-xs font-medium px-2 py-1 rounded bg-blue-50 text-blue-700">Dinâmico</span>
+                                @endif
+                            </div>
                             <h3 class="text-lg font-semibold text-gray-900 mb-2">{{ $qrcode->name }}</h3>
                             
                             <div class="space-y-1 text-sm text-gray-600">
@@ -258,15 +366,65 @@
                                 </div>
                         
                         <!-- Statistics and Status -->
-                        <div class="flex-shrink-0 text-right">
-                            <div class="mb-4">
-                                <div class="text-2xl font-bold text-blue-600">{{ $qrcode->total_scans ?? 0 }}</div>
-                                <div class="text-sm text-gray-500">Varreduras Totais</div>
-                                <a href="{{ route('qrcodes.scans', $qrcode) }}" class="text-xs text-blue-600 hover:text-blue-800">Estatísticas →</a>
+                        <div class="flex-shrink-0 text-right w-48">
+                            <!-- Estatísticas Principais -->
+                            <div class="mb-4 space-y-2">
+                                <div>
+                                    <div class="text-2xl font-bold text-blue-600">{{ $qrcode->stats_total_scans ?? 0 }}</div>
+                                    <div class="text-xs text-gray-500">Total de Scans</div>
+                                </div>
+                                <div class="flex items-center justify-end space-x-3 text-xs">
+                                    <div>
+                                        <div class="font-semibold text-green-600">{{ $qrcode->stats_unique_scans ?? 0 }}</div>
+                                        <div class="text-gray-500">Únicos</div>
+                                    </div>
+                                    <div>
+                                        <div class="font-semibold text-orange-600">{{ $qrcode->stats_today_scans ?? 0 }}</div>
+                                        <div class="text-gray-500">Hoje</div>
+                                    </div>
+                                </div>
                             </div>
                             
-                                <div class="flex items-center space-x-2">
-                                <span class="text-sm text-gray-500">Estado:</span>
+                            <!-- Último Scan -->
+                            @if(isset($qrcode->stats_last_scan) && $qrcode->stats_last_scan)
+                                <div class="mb-3 p-2 bg-gray-50 rounded-lg">
+                                    <div class="text-xs text-gray-500 mb-1">Último Scan</div>
+                                    <div class="text-xs font-medium text-gray-900">
+                                        {{ \App\Helpers\DateHelper::formatWithMonth($qrcode->stats_last_scan->scanned_at) }}
+                                    </div>
+                                    <div class="text-xs text-gray-500">
+                                        {{ $qrcode->stats_last_scan->scanned_at->format('H:i') }}
+                                        @if($qrcode->stats_last_scan->country)
+                                            • {{ $qrcode->stats_last_scan->country }}
+                                        @endif
+                                    </div>
+                                </div>
+                            @else
+                                <div class="mb-3 p-2 bg-gray-50 rounded-lg">
+                                    <div class="text-xs text-gray-400">Nenhum scan ainda</div>
+                                </div>
+                            @endif
+                            
+                            <!-- Estatísticas Semana/Mês -->
+                            <div class="mb-3 flex items-center justify-end space-x-2 text-xs">
+                                <div class="text-center">
+                                    <div class="font-semibold text-gray-700">{{ $qrcode->stats_this_week_scans ?? 0 }}</div>
+                                    <div class="text-gray-500">Esta Semana</div>
+                                </div>
+                                <div class="text-center">
+                                    <div class="font-semibold text-gray-700">{{ $qrcode->stats_this_month_scans ?? 0 }}</div>
+                                    <div class="text-gray-500">Este Mês</div>
+                                </div>
+                            </div>
+                            
+                            <!-- Link para Estatísticas -->
+                            <a href="{{ route('qrcodes.scans', $qrcode) }}" class="block text-xs text-blue-600 hover:text-blue-800 font-medium mb-3">
+                                Ver Estatísticas →
+                            </a>
+                            
+                            <!-- Status -->
+                            <div class="flex items-center justify-end space-x-2">
+                                <span class="text-xs text-gray-500">Estado:</span>
                                 <div class="flex items-center space-x-1">
                                     <label class="relative inline-flex items-center cursor-pointer">
                                         <input type="checkbox" 
@@ -275,15 +433,12 @@
                                                onchange="toggleQrStatus({{ $qrcode->id }}, this.checked)">
                                         <div class="w-10 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600"></div>
                                     </label>
-                                    <span class="text-sm font-medium {{ $qrcode->status === 'active' ? 'text-green-600' : 'text-gray-500' }}">
+                                    <span class="text-xs font-medium {{ $qrcode->status === 'active' ? 'text-green-600' : 'text-gray-500' }}">
                                         {{ $qrcode->status === 'active' ? 'Ativo' : 'Pausado' }}
                                     </span>
-                                    <svg class="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                    </svg>
                                 </div>
                             </div>
-                            </div>
+                        </div>
                     </div>
                 </div>
                                 </div>
