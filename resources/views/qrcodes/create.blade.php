@@ -3,514 +3,587 @@
 @section('title', 'Criar QR Code')
 
 @section('content')
-<div class="p-6">
-        <!-- Header -->
-    <div class="mb-8">
-        <div class="flex items-center mb-4">
-            <a href="{{ route('dashboard') }}" class="flex items-center text-teal-600 hover:text-teal-700 mr-4">
-                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
-                </svg>
-                Dashboard
-            </a>
+<div class="flex h-screen bg-gray-50 overflow-hidden">
+    <!-- Sidebar - QR Code Types -->
+    <div class="w-64 bg-white border-r border-gray-200 flex-shrink-0 overflow-y-auto">
+        <div class="p-4 border-b border-gray-200">
+            <h2 class="text-lg font-semibold text-gray-800">Tipos de QR Code</h2>
         </div>
-        
-        <div class="flex items-center mb-4">
-            <svg class="w-5 h-5 mr-2 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
-            </svg>
-            <h1 class="text-2xl font-bold text-gray-900">Website QR Code Type</h1>
+        <nav class="p-2 space-y-1">
+            @foreach([
+                ['id' => 'url', 'icon' => 'link', 'label' => 'URL Website'],
+                ['id' => 'vcard', 'icon' => 'address-card', 'label' => 'Cartão de Visita'],
+                ['id' => 'text', 'icon' => 'align-left', 'label' => 'Texto Simples'],
+                ['id' => 'email', 'icon' => 'envelope', 'label' => 'E-mail'],
+                ['id' => 'sms', 'icon' => 'comment-alt', 'label' => 'SMS'],
+                ['id' => 'wifi', 'icon' => 'wifi', 'label' => 'Wi-Fi'],
+                ['id' => 'whatsapp', 'icon' => 'whatsapp', 'label' => 'WhatsApp'],
+                ['id' => 'event', 'icon' => 'calendar-alt', 'label' => 'Evento'],
+                ['id' => 'crypto', 'icon' => 'bitcoin', 'label' => 'Criptomoeda'],
+            ] as $type)
+            <button type="button" 
+                    onclick="selectType('{{ $type['id'] }}')"
+                    class="type-btn w-full flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors {{ $loop->first ? 'bg-teal-50 text-teal-700' : 'text-gray-700 hover:bg-gray-50' }}"
+                    data-type="{{ $type['id'] }}">
+                <i class="fas fa-{{ $type['icon'] }} w-6 text-center mr-2"></i>
+                {{ $type['label'] }}
+            </button>
+            @endforeach
+        </nav>
+    </div>
+
+    <!-- Main Content - Form & Preview -->
+    <div class="flex-1 flex overflow-hidden">
+        <!-- Center - Configuration Form -->
+        <div class="flex-1 overflow-y-auto p-8">
+            <div class="max-w-2xl mx-auto">
+                <form id="qr-form" action="{{ route('qrcodes.store') }}" method="POST" class="space-y-6" enctype="multipart/form-data">
+                    @csrf
+                    <input type="hidden" name="type" id="type-input" value="url">
+                    <input type="hidden" name="design" id="design-input">
+                    
+                    <!-- Header -->
+                    <div class="mb-8">
+                        <h1 class="text-2xl font-bold text-gray-900 mb-2" id="form-title">URL Website</h1>
+                        <p class="text-gray-600" id="form-description">Crie um QR Code que redireciona para um site.</p>
+                    </div>
+
+                    <!-- Common Fields -->
+                    <div class="bg-white rounded-lg border border-gray-200 p-6 mb-6 shadow-sm">
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Nome do QR Code</label>
+                            <input type="text" name="name" class="form-input w-full rounded-md border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500" placeholder="Ex: Meu Site Pessoal" required>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Pasta (Opcional)</label>
+                            <select name="folder_id" class="form-select w-full rounded-md border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500">
+                                <option value="">Sem pasta</option>
+                                @foreach($folders as $folder)
+                                    <option value="{{ $folder->id }}">{{ $folder->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Dynamic Content Fields -->
+                    <div class="bg-white rounded-lg border border-gray-200 p-6 mb-6 shadow-sm">
+                        <h3 class="text-lg font-medium text-gray-900 mb-4">Conteúdo</h3>
+                        
+                        <!-- URL Form -->
+                        <div id="form-url" class="type-form">
+                            <div class="mb-4">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">URL do Website</label>
+                                <input type="url" name="content_url" class="content-input form-input w-full rounded-md border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500" placeholder="https://www.exemplo.com.br">
+                            </div>
+                        </div>
+
+                        <!-- VCard Form -->
+                        <div id="form-vcard" class="type-form hidden">
+                            <div class="grid grid-cols-2 gap-4">
+                                <div class="mb-4">
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Nome</label>
+                                    <input type="text" id="vcard-first-name" class="vcard-field form-input w-full rounded-md border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500">
+                                </div>
+                                <div class="mb-4">
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Sobrenome</label>
+                                    <input type="text" id="vcard-last-name" class="vcard-field form-input w-full rounded-md border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500">
+                                </div>
+                            </div>
+                            <div class="mb-4">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Telefone</label>
+                                <input type="tel" id="vcard-phone" class="vcard-field form-input w-full rounded-md border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500">
+                            </div>
+                            <div class="mb-4">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">E-mail</label>
+                                <input type="email" id="vcard-email" class="vcard-field form-input w-full rounded-md border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500">
+                            </div>
+                            <div class="mb-4">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Empresa</label>
+                                <input type="text" id="vcard-company" class="vcard-field form-input w-full rounded-md border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500">
+                            </div>
+                            <div class="mb-4">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Cargo</label>
+                                <input type="text" id="vcard-job" class="vcard-field form-input w-full rounded-md border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500">
+                            </div>
+                            <div class="mb-4">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Site</label>
+                                <input type="url" id="vcard-website" class="vcard-field form-input w-full rounded-md border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500">
+                            </div>
+                        </div>
+
+                        <!-- Text Form -->
+                        <div id="form-text" class="type-form hidden">
+                            <div class="mb-4">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Texto</label>
+                                <textarea name="content_text" rows="5" class="content-input form-textarea w-full rounded-md border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500" placeholder="Digite seu texto aqui..."></textarea>
+                            </div>
+                        </div>
+
+                        <!-- Email Form -->
+                        <div id="form-email" class="type-form hidden">
+                            <div class="mb-4">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">E-mail de Destino</label>
+                                <input type="email" id="email-address" class="email-field form-input w-full rounded-md border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500">
+                            </div>
+                            <div class="mb-4">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Assunto</label>
+                                <input type="text" id="email-subject" class="email-field form-input w-full rounded-md border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500">
+                            </div>
+                            <div class="mb-4">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Mensagem</label>
+                                <textarea id="email-body" rows="4" class="email-field form-textarea w-full rounded-md border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500"></textarea>
+                            </div>
+                        </div>
+
+                        <!-- SMS Form -->
+                        <div id="form-sms" class="type-form hidden">
+                            <div class="mb-4">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Número de Telefone</label>
+                                <input type="tel" id="sms-phone" class="sms-field form-input w-full rounded-md border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500">
+                            </div>
+                            <div class="mb-4">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Mensagem</label>
+                                <textarea id="sms-message" rows="4" class="sms-field form-textarea w-full rounded-md border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500"></textarea>
+                            </div>
+                        </div>
+
+                        <!-- WiFi Form -->
+                        <div id="form-wifi" class="type-form hidden">
+                            <div class="mb-4">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Nome da Rede (SSID)</label>
+                                <input type="text" id="wifi-ssid" class="wifi-field form-input w-full rounded-md border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500">
+                            </div>
+                            <div class="mb-4">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Senha</label>
+                                <input type="text" id="wifi-password" class="wifi-field form-input w-full rounded-md border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500">
+                            </div>
+                            <div class="mb-4">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Tipo de Criptografia</label>
+                                <select id="wifi-encryption" class="wifi-field form-select w-full rounded-md border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500">
+                                    <option value="WPA">WPA/WPA2</option>
+                                    <option value="WEP">WEP</option>
+                                    <option value="nopass">Sem senha</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- WhatsApp Form -->
+                        <div id="form-whatsapp" class="type-form hidden">
+                            <div class="mb-4">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Número (com código do país)</label>
+                                <input type="tel" id="whatsapp-phone" class="whatsapp-field form-input w-full rounded-md border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500" placeholder="+5511999999999">
+                            </div>
+                            <div class="mb-4">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Mensagem (Opcional)</label>
+                                <textarea id="whatsapp-message" rows="4" class="whatsapp-field form-textarea w-full rounded-md border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500"></textarea>
+                            </div>
+                        </div>
+
+                        <!-- Event Form -->
+                        <div id="form-event" class="type-form hidden">
+                            <div class="mb-4">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Título do Evento</label>
+                                <input type="text" id="event-title" class="event-field form-input w-full rounded-md border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500">
+                            </div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div class="mb-4">
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Início</label>
+                                    <input type="datetime-local" id="event-start" class="event-field form-input w-full rounded-md border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500">
+                                </div>
+                                <div class="mb-4">
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Fim</label>
+                                    <input type="datetime-local" id="event-end" class="event-field form-input w-full rounded-md border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500">
+                                </div>
+                            </div>
+                            <div class="mb-4">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Localização</label>
+                                <input type="text" id="event-location" class="event-field form-input w-full rounded-md border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500">
+                            </div>
+                        </div>
+
+                        <!-- Crypto Form -->
+                        <div id="form-crypto" class="type-form hidden">
+                            <div class="mb-4">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Moeda</label>
+                                <select id="crypto-currency" class="crypto-field form-select w-full rounded-md border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500">
+                                    <option value="bitcoin">Bitcoin</option>
+                                    <option value="ethereum">Ethereum</option>
+                                    <option value="litecoin">Litecoin</option>
+                                </select>
+                            </div>
+                            <div class="mb-4">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Endereço da Carteira</label>
+                                <input type="text" id="crypto-address" class="crypto-field form-input w-full rounded-md border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500">
+                            </div>
+                            <div class="mb-4">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Valor (Opcional)</label>
+                                <input type="number" step="any" id="crypto-amount" class="crypto-field form-input w-full rounded-md border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500">
+                            </div>
+                        </div>
+
+                        <!-- Hidden Content Input for Submission -->
+                        <input type="hidden" name="content" id="final-content">
+                    </div>
+
+                    <!-- Design Customization -->
+                    <div class="bg-white rounded-lg border border-gray-200 p-6 mb-6 shadow-sm">
+                        <h3 class="text-lg font-medium text-gray-900 mb-4">Personalização</h3>
+                        
+                        <!-- Tabs -->
+                        <div class="border-b border-gray-200 mb-4">
+                            <nav class="-mb-px flex space-x-8">
+                                <button type="button" onclick="switchDesignTab('frames')" class="design-tab-btn border-teal-500 text-teal-600 whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm" data-tab="frames">Molduras</button>
+                                <button type="button" onclick="switchDesignTab('colors')" class="design-tab-btn border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm" data-tab="colors">Cores</button>
+                                <button type="button" onclick="switchDesignTab('logo')" class="design-tab-btn border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm" data-tab="logo">Logo</button>
+                            </nav>
+                        </div>
+
+                        <!-- Frames Tab -->
+                        <div id="design-frames" class="design-tab">
+                            <div class="grid grid-cols-3 gap-4">
+                                <button type="button" onclick="selectFrame('simple')" class="frame-btn p-2 border-2 border-teal-500 rounded-lg hover:bg-gray-50" data-frame="simple">
+                                    <div class="aspect-square bg-gray-100 rounded flex items-center justify-center text-xs text-gray-500">Simples</div>
+                                </button>
+                                <button type="button" onclick="selectFrame('bubble_bottom')" class="frame-btn p-2 border-2 border-transparent rounded-lg hover:bg-gray-50" data-frame="bubble_bottom">
+                                    <div class="aspect-square bg-gray-100 rounded flex items-center justify-center text-xs text-gray-500">Balão Baixo</div>
+                                </button>
+                                <button type="button" onclick="selectFrame('bubble_top')" class="frame-btn p-2 border-2 border-transparent rounded-lg hover:bg-gray-50" data-frame="bubble_top">
+                                    <div class="aspect-square bg-gray-100 rounded flex items-center justify-center text-xs text-gray-500">Balão Topo</div>
+                                </button>
+                                <button type="button" onclick="selectFrame('polaroid')" class="frame-btn p-2 border-2 border-transparent rounded-lg hover:bg-gray-50" data-frame="polaroid">
+                                    <div class="aspect-square bg-gray-100 rounded flex items-center justify-center text-xs text-gray-500">Polaroid</div>
+                                </button>
+                                <button type="button" onclick="selectFrame('phone')" class="frame-btn p-2 border-2 border-transparent rounded-lg hover:bg-gray-50" data-frame="phone">
+                                    <div class="aspect-square bg-gray-100 rounded flex items-center justify-center text-xs text-gray-500">Celular</div>
+                                </button>
+                            </div>
+                            
+                            <div class="mt-4">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Texto da Moldura</label>
+                                <input type="text" id="frame-label" value="SCAN ME" class="form-input w-full rounded-md border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500">
+                            </div>
+                        </div>
+
+                        <!-- Colors Tab -->
+                        <div id="design-colors" class="design-tab hidden">
+                            <div class="grid grid-cols-2 gap-4 mb-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Cor do QR Code</label>
+                                    <input type="color" id="color-body" value="#000000" class="w-full h-10 rounded-md border border-gray-300 p-1">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Cor de Fundo</label>
+                                    <input type="color" id="color-background" value="#ffffff" class="w-full h-10 rounded-md border border-gray-300 p-1">
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Cor da Moldura</label>
+                                    <input type="color" id="color-frame" value="#000000" class="w-full h-10 rounded-md border border-gray-300 p-1">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Cor do Texto</label>
+                                    <input type="color" id="color-text" value="#ffffff" class="w-full h-10 rounded-md border border-gray-300 p-1">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Logo Tab -->
+                        <div id="design-logo" class="design-tab hidden">
+                            <div class="mb-4">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Upload Logo</label>
+                                <input type="file" id="logo-upload" name="logo" accept="image/*" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-teal-50 file:text-teal-700 hover:file:bg-teal-100">
+                            </div>
+                            <p class="text-xs text-gray-500">Recomendado: Imagem quadrada, fundo transparente, max 2MB.</p>
+                        </div>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <div class="flex justify-end space-x-4">
+                        <a href="{{ route('dashboard') }}" class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50">Cancelar</a>
+                        <button type="submit" class="px-4 py-2 bg-teal-600 border border-transparent rounded-md text-sm font-medium text-white hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500">
+                            Criar QR Code
+                        </button>
+                    </div>
+                </form>
+            </div>
         </div>
 
-        <!-- Progress Steps -->
-        <div class="flex items-center space-x-4">
-            <div class="flex items-center">
-                <div id="step-1" class="w-8 h-8 bg-teal-600 text-white rounded-full flex items-center justify-center text-sm font-medium">1</div>
-                <span class="ml-2 text-sm font-medium text-teal-600">Setup Info</span>
+        <!-- Right Sidebar - Preview -->
+        <div class="w-96 bg-gray-100 border-l border-gray-200 p-8 flex flex-col items-center justify-center sticky top-0 h-screen">
+            <div class="bg-white p-4 rounded-xl shadow-lg mb-6 w-full max-w-xs">
+                <div class="aspect-[3/4] bg-gray-50 rounded-lg flex items-center justify-center overflow-hidden relative" id="preview-container">
+                    <!-- Preview Image will be injected here -->
+                    <div id="loading-preview" class="hidden absolute inset-0 bg-white/80 flex items-center justify-center z-10">
+                        <i class="fas fa-spinner fa-spin text-teal-600 text-3xl"></i>
+                    </div>
+                    <img id="qr-preview-image" src="" alt="QR Code Preview" class="max-w-full max-h-full object-contain hidden">
+                    <div id="empty-preview" class="text-center text-gray-400">
+                        <i class="fas fa-qrcode text-6xl mb-4"></i>
+                        <p>Preencha os dados para visualizar</p>
+                    </div>
+                </div>
             </div>
-            <div class="w-8 h-0.5 bg-gray-300"></div>
-            <div class="flex items-center">
-                <div id="step-2" class="w-8 h-8 bg-gray-300 text-gray-600 rounded-full flex items-center justify-center text-sm font-medium">2</div>
-                <span id="step-2-text" class="ml-2 text-sm font-medium text-gray-500">Design QR Code</span>
+            
+            <div class="text-center">
+                <button type="button" id="refresh-preview-btn" class="text-teal-600 hover:text-teal-700 font-medium text-sm flex items-center justify-center">
+                    <i class="fas fa-sync-alt mr-2"></i> Atualizar Preview
+                </button>
             </div>
         </div>
     </div>
+</div>
 
-    <div id="step-1-content" class="max-w-4xl">
-        <form id="qr-form" class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    @csrf
-                    
-            <!-- Left Column - Form -->
-            <div class="space-y-6">
-                <!-- QR Code Name -->
-                <div class="bg-white rounded-lg border border-gray-200 p-6">
-                        <label for="name" class="block text-sm font-medium text-gray-700 mb-2">
-                            Nome do QR Code
-                        </label>
-                        <input type="text" 
-                               id="name" 
-                               name="name" 
-                               value="{{ old('name') }}"
-                           class="form-input"
-                           placeholder="Ex: Loja no ifood"
-                               required>
-                        @error('name')
-                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                        @enderror
-                </div>
-
-                <!-- URL Input -->
-                <div class="bg-white rounded-lg border border-gray-200 p-6">
-                    <label for="url" class="block text-sm font-medium text-gray-700 mb-2">
-                        URL do Website
-                    </label>
-                    <input type="url" 
-                           id="url" 
-                           name="url" 
-                           value="{{ old('url') }}"
-                           class="form-input"
-                           placeholder="https://www.exemplo.com.br"
-                           required>
-                    <p class="mt-2 text-sm text-gray-500">
-                        Add the website URL to link with your QR Code.
-                    </p>
-                    @error('url')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                    @enderror
-                    </div>
-
-                <!-- Additional Options -->
-                <div class="bg-white rounded-lg border border-gray-200 p-6">
-                    <h3 class="text-sm font-medium text-gray-700 mb-4">Opções Adicionais</h3>
-                    
-                    <div class="space-y-4">
-                        <!-- Folder Selection -->
-                        <div>
-                            <label for="folder_id" class="block text-sm font-medium text-gray-700 mb-2">
-                                Pasta (opcional)
-                            </label>
-                            <select id="folder_id" 
-                                    name="folder_id" 
-                                    class="form-input">
-                                <option value="">Sem pasta</option>
-                                @foreach($folders as $folder)
-                                <option value="{{ $folder->id }}" 
-                                        {{ old('folder_id', $selectedFolderId) == $folder->id ? 'selected' : '' }}>
-                                    {{ $folder->name }}
-                                </option>
-                                @endforeach
-                            </select>
-                            <p class="mt-1 text-sm text-gray-500">
-                                Organize seus QR codes em pastas
-                            </p>
-                        </div>
-
-                        <div>
-                            <label for="description" class="block text-sm font-medium text-gray-700 mb-2">
-                                Descrição (opcional)
-                            </label>
-                            <textarea id="description" 
-                                      name="description" 
-                                      rows="3"
-                                      class="form-input"
-                                      placeholder="Descrição do QR Code...">{{ old('description') }}</textarea>
-                        </div>
-
-                        <div>
-                            <label class="flex items-center">
-                                <input type="checkbox" 
-                                       name="is_active" 
-                                       value="1" 
-                                       class="h-4 w-4 text-teal-600 focus:ring-teal-500 border-gray-300 rounded"
-                                       {{ old('is_active', true) ? 'checked' : '' }}>
-                                <span class="ml-2 text-sm text-gray-700">Ativar QR Code imediatamente</span>
-                            </label>
-                        </div>
-                                    </div>
-                                </div>
-                        </div>
-
-            <!-- Right Column - Preview -->
-            <div class="space-y-6">
-                <!-- Preview Card -->
-                <div class="bg-white rounded-lg border border-gray-200 p-6">
-                    <div class="flex items-center justify-between mb-4">
-                        <h3 class="text-lg font-medium text-gray-900">Pré-visualização</h3>
-                        <button type="button" id="refresh-preview" class="text-gray-400 hover:text-gray-600">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-                                            </svg>
-                        </button>
-                        </div>
-
-                    <!-- Mobile Preview -->
-                    <div class="bg-gray-50 rounded-lg p-4 mb-4">
-                        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mx-auto" style="max-width: 300px;">
-                            <!-- Browser Bar -->
-                            <div class="flex items-center space-x-2 mb-4">
-                                <div class="flex space-x-1">
-                                    <div class="w-3 h-3 bg-red-400 rounded-full"></div>
-                                    <div class="w-3 h-3 bg-yellow-400 rounded-full"></div>
-                                    <div class="w-3 h-3 bg-green-400 rounded-full"></div>
-                                </div>
-                                <div class="flex-1 bg-gray-100 rounded px-3 py-1 text-xs text-gray-600" id="preview-url">
-                                    https://www.exemplo.com.br
-                                </div>
-                        </div>
-
-                            <!-- Content -->
-                                    <div class="text-center">
-                                <div class="w-16 h-16 bg-teal-100 rounded-lg mx-auto mb-4 flex items-center justify-center">
-                                    <svg class="w-8 h-8 text-teal-600" fill="currentColor" viewBox="0 0 24 24">
-                                        <path d="M3 3h6v6H3V3zm8 0h6v6h-6V3zM3 11h6v6H3v-6zm8 0h6v6h-6v-6z"/>
-                                            </svg>
-                                </div>
-                                <p class="text-sm text-gray-600">
-                                    The QR code will take you to the URL address.
-                                </p>
-                                </div>
-                        </div>
-                    </div>
-
-                    <!-- QR Code Preview -->
-                    <div class="text-center">
-                        <div class="w-32 h-32 bg-white border-2 border-gray-200 rounded-lg mx-auto flex items-center justify-center">
-                            <div id="qr-preview" class="w-24 h-24 bg-gray-100 rounded flex items-center justify-center">
-                                <svg class="w-8 h-8 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
-                                    <path d="M3 3h6v6H3V3zm8 0h6v6h-6V3zM3 11h6v6H3v-6zm8 0h6v6h-6v-6z"/>
-                                </svg>
-            </div>
-                        </div>
-                        <p class="mt-2 text-sm text-gray-500">QR Code será gerado após salvar</p>
-                        </div>
-                    </div>
-
-                <!-- Download Options -->
-                <div class="bg-white rounded-lg border border-gray-200 p-6">
-                    <h3 class="text-lg font-medium text-gray-900 mb-4">Opções de Download</h3>
-                    
-                    <div class="space-y-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Formato do arquivo</label>
-                            <div class="grid grid-cols-2 gap-2">
-                                <label class="flex items-center p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
-                                    <input type="radio" name="format" value="png" class="h-4 w-4 text-teal-600 focus:ring-teal-500 border-gray-300" checked>
-                                    <span class="ml-2 text-sm text-gray-700">PNG</span>
-                                </label>
-                                <label class="flex items-center p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
-                                    <input type="radio" name="format" value="svg" class="h-4 w-4 text-teal-600 focus:ring-teal-500 border-gray-300">
-                                    <span class="ml-2 text-sm text-gray-700">SVG</span>
-                                </label>
-                                        </div>
-                                    </div>
-                                    
-                                    <div>
-                            <label for="size" class="block text-sm font-medium text-gray-700 mb-2">Tamanho</label>
-                            <select id="size" name="size" class="form-input">
-                                <option value="256">256 x 256</option>
-                                <option value="512" selected>512 x 512</option>
-                                <option value="1024">1024 x 1024</option>
-                                <option value="2048">2048 x 2048</option>
-                            </select>
-                        </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-        <!-- Action Buttons -->
-        <div class="flex justify-end space-x-4 mt-8">
-            <a href="{{ route('dashboard') }}" class="btn-outline">
-                Cancelar
-            </a>
-            <button type="button" id="next-step" class="btn-teal">
-                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-                </svg>
-                Criar QR Code
-            </button>
-                                </div>
-                            </div>
-
-    <!-- Step 2 Content (Design) - Hidden by default -->
-    <div id="step-2-content" class="max-w-4xl hidden">
-        <div class="bg-white rounded-lg border border-gray-200 p-6">
-            <h3 class="text-lg font-medium text-gray-900 mb-4">Design do QR Code</h3>
-            <p class="text-gray-600 mb-6">Personalize a aparência do seu QR Code</p>
-            
-            <!-- Design Options -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Cor do QR Code</label>
-                    <input type="color" id="qr-color" value="#000000" class="w-full h-10 border border-gray-300 rounded-md">
-                                        </div>
-                
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Cor de fundo</label>
-                    <input type="color" id="bg-color" value="#ffffff" class="w-full h-10 border border-gray-300 rounded-md">
-                                </div>
-                            </div>
-
-            <!-- Final Preview -->
-            <div class="mt-6 text-center">
-                <div class="w-48 h-48 bg-white border-2 border-gray-200 rounded-lg mx-auto flex items-center justify-center">
-                    <div id="final-qr-preview" class="w-40 h-40 bg-gray-100 rounded flex items-center justify-center">
-                        <svg class="w-12 h-12 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M3 3h6v6H3V3zm8 0h6v6h-6V3zM3 11h6v6H3v-6zm8 0h6v6h-6v-6z"/>
-                        </svg>
-                            </div>
-                        </div>
-                    </div>
-
-            <!-- Final Action Buttons -->
-            <div class="flex justify-end space-x-4 mt-8">
-                <button type="button" id="back-step" class="btn-outline">
-                    Voltar
-                </button>
-                <button type="button" id="save-qr" class="btn-teal">
-                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                    </svg>
-                    Salvar QR Code
-                        </button>
-            </div>
-        </div>
-            </div>
-        </div>
+<!-- FontAwesome for Icons -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const step1Content = document.getElementById('step-1-content');
-    const step2Content = document.getElementById('step-2-content');
-    const nextStepBtn = document.getElementById('next-step');
-    const backStepBtn = document.getElementById('back-step');
-    const saveQrBtn = document.getElementById('save-qr');
-    const step1 = document.getElementById('step-1');
-    const step2 = document.getElementById('step-2');
-    const step2Text = document.getElementById('step-2-text');
-    
-    const nameInput = document.getElementById('name');
-    const urlInput = document.getElementById('url');
-    const previewUrl = document.getElementById('preview-url');
-    const qrPreview = document.getElementById('qr-preview');
-    const finalQrPreview = document.getElementById('final-qr-preview');
-    const qrColor = document.getElementById('qr-color');
-    const bgColor = document.getElementById('bg-color');
-    
-    // Update preview in real-time
-    function updatePreview() {
-        const url = urlInput.value || 'https://www.exemplo.com.br';
-        previewUrl.textContent = url.length > 30 ? url.substring(0, 30) + '...' : url;
+    // State
+    let currentType = 'url';
+    let currentFrame = 'simple';
+    let designState = {
+        colors: { body: '#000000', background: '#ffffff', frame: '#000000', text: '#ffffff' },
+        frame: { style: 'simple', label: 'SCAN ME' },
+        logo: null
+    };
+
+    // Elements
+    const form = document.getElementById('qr-form');
+    const typeInput = document.getElementById('type-input');
+    const designInput = document.getElementById('design-input');
+    const finalContentInput = document.getElementById('final-content');
+    const previewImage = document.getElementById('qr-preview-image');
+    const emptyPreview = document.getElementById('empty-preview');
+    const loadingPreview = document.getElementById('loading-preview');
+    const logoUpload = document.getElementById('logo-upload');
+
+    // Type Selection
+    window.selectType = function(type) {
+        currentType = type;
+        typeInput.value = type;
         
-        // Update QR code preview with real QR code
-        if (urlInput.value) {
-            generateQrPreview(url);
-        } else {
-            qrPreview.innerHTML = `
-                <div class="w-20 h-20 bg-gray-100 rounded flex items-center justify-center">
-                    <svg class="w-8 h-8 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M3 3h6v6H3V3zm8 0h6v6h-6V3zM3 11h6v6H3v-6zm8 0h6v6h-6v-6z"/>
-                    </svg>
-                </div>
-            `;
-        }
-    }
-    
-    // Generate real QR code preview
-    function generateQrPreview(url) {
-        qrPreview.innerHTML = `
-            <div class="w-20 h-20 bg-gray-100 rounded flex items-center justify-center">
-                <svg class="w-6 h-6 text-gray-400 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-                </svg>
-            </div>
-        `;
-        
-        // Generate QR code using a simple API or library
-        fetch('/api/generate-qr-preview', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-            },
-            body: JSON.stringify({
-                url: url,
-                size: 80
-            })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success && data.qr_code_url) {
-                qrPreview.innerHTML = `
-                    <img src="${data.qr_code_url}" alt="QR Code Preview" class="w-20 h-20 object-contain">
-                `;
+        // Update UI
+        document.querySelectorAll('.type-btn').forEach(btn => {
+            if (btn.dataset.type === type) {
+                btn.classList.remove('text-gray-700', 'hover:bg-gray-50');
+                btn.classList.add('bg-teal-50', 'text-teal-700');
             } else {
-                // Fallback to simple QR code using qr.js library
-                generateSimpleQrCode(url);
+                btn.classList.add('text-gray-700', 'hover:bg-gray-50');
+                btn.classList.remove('bg-teal-50', 'text-teal-700');
             }
-        })
-        .catch(error => {
-            console.error('Error generating QR preview:', error);
-            // Fallback to simple QR code
-            generateSimpleQrCode(url);
         });
-    }
-    
-    // Generate simple QR code using qr.js library
-    function generateSimpleQrCode(url) {
-        // Create a simple QR code using canvas
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-        canvas.width = 80;
-        canvas.height = 80;
-        
-        // Simple QR code pattern (placeholder)
-        ctx.fillStyle = '#000000';
-        ctx.fillRect(10, 10, 60, 60);
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(15, 15, 50, 50);
-        ctx.fillStyle = '#000000';
-        ctx.fillRect(20, 20, 40, 40);
-        
-        qrPreview.innerHTML = `
-            <img src="${canvas.toDataURL()}" alt="QR Code Preview" class="w-20 h-20 object-contain">
-        `;
-    }
-    
-    // Update final QR preview
-    function updateFinalPreview() {
-        const qrColorValue = qrColor.value;
-        const bgColorValue = bgColor.value;
-        
-        finalQrPreview.innerHTML = `
-            <div class="w-36 h-36 rounded" style="background-color: ${bgColorValue};">
-                <div class="w-full h-full flex items-center justify-center">
-                    <div class="w-32 h-32 rounded" style="background-color: ${qrColorValue};">
-                        <svg class="w-24 h-24 text-white mx-auto mt-4" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M3 3h6v6H3V3zm8 0h6v6h-6V3zM3 11h6v6H3v-6zm8 0h6v6h-6v-6z"/>
-                        </svg>
-                    </div>
-                </div>
-            </div>
-        `;
-    }
-    
-    // Event listeners
-    urlInput.addEventListener('input', updatePreview);
-    nameInput.addEventListener('input', updatePreview);
-    qrColor.addEventListener('change', updateFinalPreview);
-    bgColor.addEventListener('change', updateFinalPreview);
-    
-    // Step navigation
-    nextStepBtn.addEventListener('click', function() {
-        // Validate required fields
-        if (!nameInput.value || !urlInput.value) {
-            alert('Por favor, preencha todos os campos obrigatórios.');
-            return;
-        }
-        
-        // Show step 2
-        step1Content.classList.add('hidden');
-        step2Content.classList.remove('hidden');
-        
-        // Update step indicators
-        step1.classList.remove('bg-teal-600', 'text-white');
-        step1.classList.add('bg-gray-300', 'text-gray-600');
-        step2.classList.remove('bg-gray-300', 'text-gray-600');
-        step2.classList.add('bg-teal-600', 'text-white');
-        step2Text.classList.remove('text-gray-500');
-        step2Text.classList.add('text-teal-600');
-        
-        // Update final preview
-        updateFinalPreview();
-    });
-    
-    backStepBtn.addEventListener('click', function() {
-        // Show step 1
-        step2Content.classList.add('hidden');
-        step1Content.classList.remove('hidden');
-        
-        // Update step indicators
-        step2.classList.remove('bg-teal-600', 'text-white');
-        step2.classList.add('bg-gray-300', 'text-gray-600');
-        step1.classList.remove('bg-gray-300', 'text-gray-600');
-        step1.classList.add('bg-teal-600', 'text-white');
-        step2Text.classList.remove('text-teal-600');
-        step2Text.classList.add('text-gray-500');
-    });
-    
-    // Save QR Code
-    saveQrBtn.addEventListener('click', function() {
-        // Disable button to prevent double submission
-        saveQrBtn.disabled = true;
-        saveQrBtn.textContent = 'Salvando...';
-        
-        // Create form data with correct field names
-        const formData = new FormData();
-        formData.append('_token', document.querySelector('input[name="_token"]').value);
-        formData.append('name', nameInput.value);
-        formData.append('type', 'url'); // QR Code type
-        formData.append('content', urlInput.value); // URL content
-        formData.append('folder_id', document.getElementById('folder_id').value);
-        formData.append('description', document.getElementById('description').value);
-        formData.append('is_active', document.querySelector('input[name="is_active"]').checked ? '1' : '0');
-        
-        // Design data
-        const design = {
-            colors: {
-                body: qrColor.value,
-                background: bgColor.value
-            },
-            size: parseInt(document.getElementById('size').value),
-            margin: 10,
-            shape: 'square'
+
+        // Show/Hide Forms
+        document.querySelectorAll('.type-form').forEach(f => f.classList.add('hidden'));
+        document.getElementById(`form-${type}`).classList.remove('hidden');
+
+        // Update Header
+        const labels = {
+            'url': 'URL Website', 'vcard': 'Cartão de Visita', 'text': 'Texto Simples',
+            'email': 'E-mail', 'sms': 'SMS', 'wifi': 'Wi-Fi',
+            'whatsapp': 'WhatsApp', 'event': 'Evento', 'crypto': 'Criptomoeda'
         };
-        formData.append('design', JSON.stringify(design));
+        document.getElementById('form-title').textContent = labels[type];
         
-        // Submit form
-        fetch('{{ route("qrcodes.store") }}', {
-            method: 'POST',
-            body: formData,
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest',
-                'Accept': 'application/json'
-            }
-        })
-        .then(response => {
-            console.log('Response status:', response.status);
-            
-            if (response.status === 200) {
-                // Try to parse as JSON first
-                return response.json().catch(() => {
-                    // If not JSON, assume success and redirect
-                    console.log('Response is not JSON, assuming success');
-                    return { success: true };
-                });
+        updatePreview();
+    };
+
+    // Design Tabs
+    window.switchDesignTab = function(tab) {
+        document.querySelectorAll('.design-tab').forEach(t => t.classList.add('hidden'));
+        document.getElementById(`design-${tab}`).classList.remove('hidden');
+        
+        document.querySelectorAll('.design-tab-btn').forEach(btn => {
+            if (btn.dataset.tab === tab) {
+                btn.classList.remove('border-transparent', 'text-gray-500');
+                btn.classList.add('border-teal-500', 'text-teal-600');
             } else {
-                throw new Error('HTTP ' + response.status);
+                btn.classList.add('border-transparent', 'text-gray-500');
+                btn.classList.remove('border-teal-500', 'text-teal-600');
             }
-        })
-        .then(data => {
-            console.log('Response data:', data);
-            if (data.success !== false) {
-                // Success - redirect to dashboard
-                window.location.href = '{{ route("dashboard") }}';
-            } else {
-                alert('Erro ao criar QR Code: ' + (data.message || 'Erro desconhecido'));
-                saveQrBtn.disabled = false;
-                saveQrBtn.textContent = 'Salvar QR Code';
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Erro ao criar QR Code: ' + error.message);
-            saveQrBtn.disabled = false;
-            saveQrBtn.textContent = 'Salvar QR Code';
         });
+    };
+
+    // Frame Selection
+    window.selectFrame = function(frame) {
+        currentFrame = frame;
+        designState.frame.style = frame;
+        
+        document.querySelectorAll('.frame-btn').forEach(btn => {
+            if (btn.dataset.frame === frame) {
+                btn.classList.remove('border-transparent');
+                btn.classList.add('border-teal-500');
+            } else {
+                btn.classList.add('border-transparent');
+                btn.classList.remove('border-teal-500');
+            }
+        });
+        
+        updatePreview();
+    };
+
+    // Content Generators
+    function getContent() {
+        switch(currentType) {
+            case 'url':
+                return document.querySelector('input[name="content_url"]').value;
+            case 'vcard':
+                const fname = document.getElementById('vcard-first-name').value;
+                const lname = document.getElementById('vcard-last-name').value;
+                const phone = document.getElementById('vcard-phone').value;
+                const email = document.getElementById('vcard-email').value;
+                return `BEGIN:VCARD\nVERSION:3.0\nN:${lname};${fname}\nFN:${fname} ${lname}\nTEL:${phone}\nEMAIL:${email}\nEND:VCARD`;
+            case 'text':
+                return document.querySelector('textarea[name="content_text"]').value;
+            case 'email':
+                const eAddr = document.getElementById('email-address').value;
+                const eSub = document.getElementById('email-subject').value;
+                const eBody = document.getElementById('email-body').value;
+                return `mailto:${eAddr}?subject=${encodeURIComponent(eSub)}&body=${encodeURIComponent(eBody)}`;
+            case 'sms':
+                const sPhone = document.getElementById('sms-phone').value;
+                const sMsg = document.getElementById('sms-message').value;
+                return `smsto:${sPhone}:${sMsg}`;
+            case 'wifi':
+                const ssid = document.getElementById('wifi-ssid').value;
+                const pass = document.getElementById('wifi-password').value;
+                const enc = document.getElementById('wifi-encryption').value;
+                return `WIFI:S:${ssid};T:${enc};P:${pass};;`;
+            case 'whatsapp':
+                const wPhone = document.getElementById('whatsapp-phone').value;
+                const wMsg = document.getElementById('whatsapp-message').value;
+                return `https://wa.me/${wPhone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(wMsg)}`;
+            case 'event':
+                // Simple event format
+                return `BEGIN:VEVENT\nSUMMARY:${document.getElementById('event-title').value}\nLOCATION:${document.getElementById('event-location').value}\nDTSTART:${document.getElementById('event-start').value}\nDTEND:${document.getElementById('event-end').value}\nEND:VEVENT`;
+            case 'crypto':
+                const cAddr = document.getElementById('crypto-address').value;
+                const cAmt = document.getElementById('crypto-amount').value;
+                const cCurr = document.getElementById('crypto-currency').value;
+                return `${cCurr}:${cAddr}?amount=${cAmt}`;
+            default:
+                return '';
+        }
+    }
+
+    // Preview Updater
+    let debounceTimer;
+    function updatePreview() {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => {
+            const content = getContent();
+            if (!content || content.length < 5) { // Basic validation
+                emptyPreview.classList.remove('hidden');
+                previewImage.classList.add('hidden');
+                return;
+            }
+
+            loadingPreview.classList.remove('hidden');
+            
+            // Prepare Design Data
+            designState.colors.body = document.getElementById('color-body').value;
+            designState.colors.background = document.getElementById('color-background').value;
+            designState.colors.frame = document.getElementById('color-frame').value;
+            designState.colors.text = document.getElementById('color-text').value;
+            designState.frame.label = document.getElementById('frame-label').value;
+            
+            // Construct design object for backend
+            const designPayload = {
+                colors: {
+                    body: designState.colors.body,
+                    background: designState.colors.background
+                },
+                frame: {
+                    style: designState.frame.style,
+                    label: designState.frame.label,
+                    color: designState.colors.frame,
+                    text_color: designState.colors.text
+                },
+                logo: designState.logo
+            };
+
+            // Call API
+            fetch('{{ route("qrcodes.preview") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({
+                    content: content,
+                    type: currentType,
+                    design: designPayload
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    previewImage.src = data.preview_url;
+                    previewImage.classList.remove('hidden');
+                    emptyPreview.classList.add('hidden');
+                }
+            })
+            .catch(err => console.error(err))
+            .finally(() => {
+                loadingPreview.classList.add('hidden');
+            });
+        }, 500);
+    }
+
+    // Event Listeners
+    document.querySelectorAll('input, textarea, select').forEach(el => {
+        el.addEventListener('input', updatePreview);
+        el.addEventListener('change', updatePreview);
     });
-    
-    // Initial preview update
-    updatePreview();
+
+    document.getElementById('refresh-preview-btn').addEventListener('click', updatePreview);
+
+    // Logo Upload
+    if (logoUpload) {
+        logoUpload.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    designState.logo = e.target.result;
+                    updatePreview();
+                };
+                reader.readAsDataURL(file);
+            } else {
+                designState.logo = null;
+                updatePreview();
+            }
+        });
+    }
+
+    // Form Submission
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        finalContentInput.value = getContent();
+        
+        // Prepare final design JSON
+        const designPayload = {
+            colors: {
+                body: document.getElementById('color-body').value,
+                background: document.getElementById('color-background').value
+            },
+            frame: {
+                style: currentFrame,
+                label: document.getElementById('frame-label').value,
+                color: document.getElementById('color-frame').value,
+                text_color: document.getElementById('color-text').value
+            },
+            logo: designState.logo
+        };
+        designInput.value = JSON.stringify(designPayload);
+        
+        this.submit();
     });
+
+    // Initial Load
+    selectType('url');
+});
 </script>
 @endsection
